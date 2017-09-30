@@ -1,0 +1,60 @@
+{
+	"pipeline": [
+		{
+			"steps": [
+				{
+					"name": "postgres",
+					"alias": "postgres",
+					"image": "postgres:latest",
+					"detach": true,
+					"environment": {
+						"POSTGRES_USER": "postgres",
+						"POSTGRES_DB": "test"
+					},
+					"networks": [
+						{
+							"name": "postgres_network",
+							"aliases": [
+								"database"
+							]
+						}
+					],
+					"on_success": true
+				}
+			]
+		},
+		{
+			"steps": [
+				{
+					"name": "ping",
+					"alias": "ping",
+					"image": "postgres:latest",
+					"entrypoint": [
+						"/bin/sh",
+						"-c"
+					],
+					"command": [
+						"set -e; set -x; sleep 10; psql -U postgres -d test -h database -p 5432 -c \"CREATE TABLE person( NAME TEXT );\"; psql -U postgres -d test -h database -p 5432 -c \"INSERT INTO person VALUES('john smith');\"; psql -U postgres -d test -h database -p 5432 -c \"INSERT INTO person VALUES('jane doe');\"; psql -U postgres -d test -h database -p 5432 -c \"SELECT * FROM person;\""
+					],
+					"networks": [
+						{
+							"name": "postgres_network",
+							"aliases": [
+								"ping"
+							]
+						}
+					],
+					"on_success": true
+				}
+			]
+		}
+	],
+	"networks": [
+		{
+			"name": "postgres_network",
+			"driver": "bridge"
+		}
+	],
+	"volumes": [],
+	"secrets": []
+}

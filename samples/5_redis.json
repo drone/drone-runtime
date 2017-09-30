@@ -1,0 +1,56 @@
+{
+	"pipeline": [
+		{
+			"steps": [
+				{
+					"name": "redis",
+					"alias": "redis",
+					"image": "redis:3.0",
+					"detach": true,
+					"networks": [
+						{
+							"name": "redis_network",
+							"aliases": [
+								"redis"
+							]
+						}
+					],
+					"on_success": true
+				}
+			]
+		},
+		{
+			"steps": [
+				{
+					"name": "ping",
+					"alias": "ping",
+					"image": "redis:3.0",
+					"entrypoint": [
+						"/bin/sh",
+						"-c"
+					],
+					"command": [
+						"set -x; set -e; sleep 5; redis-cli -h redis ping; redis-cli -h redis set HELLO hello; redis-cli -h redis get HELLO"
+					],
+					"networks": [
+						{
+							"name": "redis_network",
+							"aliases": [
+								"ping"
+							]
+						}
+					],
+					"on_success": true
+				}
+			]
+		}
+	],
+	"networks": [
+		{
+			"name": "redis_network",
+			"driver": "bridge"
+		}
+	],
+	"volumes": [],
+	"secrets": []
+}
