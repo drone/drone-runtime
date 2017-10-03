@@ -164,11 +164,11 @@ func (e *dockerEngine) Tail(proc *engine.Step) (io.ReadCloser, error) {
 func (e *dockerEngine) Upload(proc *engine.Step, path string, r io.Reader) error {
 	options := types.CopyToContainerOptions{}
 	options.AllowOverwriteDirWithFile = false
-	return e.client.CopyToContainer(noContext, proc.Alias, path, r, options)
+	return e.client.CopyToContainer(noContext, proc.Name, path, r, options)
 }
 
 func (e *dockerEngine) Download(proc *engine.Step, path string) (io.ReadCloser, *engine.FileInfo, error) {
-	rc, stat, err := e.client.CopyFromContainer(noContext, proc.Alias, path)
+	rc, stat, err := e.client.CopyFromContainer(noContext, proc.Name, path)
 	info := &engine.FileInfo{
 		Path:  path,
 		Name:  stat.Name,

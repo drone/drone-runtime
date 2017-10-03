@@ -77,7 +77,6 @@ func main() {
 
 	var fs runtime.FileSystem
 	if *b != "" {
-		println(*b)
 		fs, err = chroot.New(*b)
 		if err != nil {
 			log.Fatalln(err)
