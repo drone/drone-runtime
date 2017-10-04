@@ -70,7 +70,7 @@ func toHostConfig(proc *engine.Step) *container.HostConfig {
 		config.ExtraHosts = proc.ExtraHosts
 	}
 	if len(proc.Devices) != 0 {
-		config.Devices = toDev(proc.Devices)
+		config.Devices = toDevices(proc.Devices)
 	}
 	if len(proc.Volumes) != 0 {
 		config.Binds = toVolumeSlice(proc.Volumes)
@@ -93,7 +93,7 @@ func toHostConfig(proc *engine.Step) *container.HostConfig {
 
 // helper function that converts a slice of volume paths to a set of
 // unique volume names.
-func toVolumeSet(from []engine.VolumeMapping) map[string]struct{} {
+func toVolumeSet(from []*engine.VolumeMapping) map[string]struct{} {
 	to := map[string]struct{}{}
 	for _, v := range from {
 		to[v.Target] = struct{}{}
@@ -101,7 +101,7 @@ func toVolumeSet(from []engine.VolumeMapping) map[string]struct{} {
 	return to
 }
 
-func toVolumeSlice(from []engine.VolumeMapping) []string {
+func toVolumeSlice(from []*engine.VolumeMapping) []string {
 	var to []string
 	for _, v := range from {
 		var path string
@@ -127,7 +127,7 @@ func toEnv(env map[string]string) []string {
 
 // helper function that converts a slice of device paths to a slice of
 // container.DeviceMapping.
-func toDev(from []engine.DeviceMapping) []container.DeviceMapping {
+func toDevices(from []*engine.DeviceMapping) []container.DeviceMapping {
 	var to []container.DeviceMapping
 	for _, device := range from {
 		to = append(to, container.DeviceMapping{

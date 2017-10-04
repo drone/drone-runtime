@@ -31,10 +31,10 @@ type (
 		Entrypoint   []string          `json:"entrypoint,omitempty"`
 		Command      []string          `json:"command,omitempty"`
 		ExtraHosts   []string          `json:"extra_hosts,omitempty"`
-		Volumes      []VolumeMapping   `json:"volumes,omitempty"`
+		Volumes      []*VolumeMapping  `json:"volumes,omitempty"`
 		Tmpfs        []string          `json:"tmpfs,omitempty"`
-		Devices      []DeviceMapping   `json:"devices,omitempty"`
-		Networks     []NetworkMapping  `json:"networks,omitempty"`
+		Devices      []*DeviceMapping  `json:"devices,omitempty"`
+		Networks     []*NetworkMapping `json:"networks,omitempty"`
 		DNS          []string          `json:"dns,omitempty"`
 		DNSSearch    []string          `json:"dns_search,omitempty"`
 		MemSwapLimit int64             `json:"memswap_limit,omitempty"`

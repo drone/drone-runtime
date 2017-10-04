@@ -24,10 +24,10 @@ func TestDockerConvertVolume(t *testing.T) {
 }
 
 func TestDockerConvertDevice(t *testing.T) {
-	from := []engine.DeviceMapping{
+	from := []*engine.DeviceMapping{
 		{Source: "/dev/ttyUSB0", Target: "/dev/ttyUSB1"},
 	}
-	to := toDev(from)
+	to := toDevices(from)
 	if len(to) != 1 {
 		t.Errorf("Expect device converted to docker.DeviceMapping")
 		return
