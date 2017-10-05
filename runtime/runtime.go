@@ -191,6 +191,10 @@ func (r *Runtime) exec(step *engine.Step) error {
 		state := snapshot(r, step, wait)
 		return r.hook.AfterEach(state)
 	}
+
+	if step.ErrIgnore {
+		return nil
+	}
 	return err
 }
 
