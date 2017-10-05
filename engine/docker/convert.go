@@ -22,6 +22,11 @@ func toConfig(proc *engine.Step) *container.Config {
 	if len(proc.Environment) != 0 {
 		config.Env = toEnv(proc.Environment)
 	}
+	if len(proc.Secrets) != 0 {
+		for _, secret := range proc.Secrets {
+			config.Env = append(config.Env, secret.Name+"="+secret.Value)
+		}
+	}
 	if len(proc.Command) != 0 {
 		config.Cmd = proc.Command
 	}
