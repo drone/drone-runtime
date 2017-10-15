@@ -36,7 +36,7 @@ func NewEnv() (engine.Engine, error) {
 
 func (e *dockerEngine) Setup(conf *engine.Config) error {
 	for _, vol := range conf.Volumes {
-		_, err := e.client.VolumeCreate(noContext, volume.VolumesCreateBody{
+		_, err := e.client.VolumeCreate(context.TODO(), volume.VolumesCreateBody{
 			Name:       vol.Name,
 			Driver:     vol.Driver,
 			DriverOpts: vol.DriverOpts,
@@ -47,7 +47,7 @@ func (e *dockerEngine) Setup(conf *engine.Config) error {
 		}
 	}
 	for _, network := range conf.Networks {
-		_, err := e.client.NetworkCreate(noContext, network.Name, types.NetworkCreate{
+		_, err := e.client.NetworkCreate(context.TODO(), network.Name, types.NetworkCreate{
 			Driver:  network.Driver,
 			Options: network.DriverOpts,
 			// Labels:  defaultLabels,
@@ -117,20 +117,21 @@ func (e *dockerEngine) Create(proc *engine.Step) error {
 }
 
 func (e *dockerEngine) Start(proc *engine.Step) error {
-	return e.client.ContainerStart(noContext, proc.Name, startOpts)
+	startOpts := types.ContainerStartOptions{}
+	return e.client.ContainerStart(context.TODO(), proc.Name, startOpts)
 }
 
 func (e *dockerEngine) Kill(proc *engine.Step) error {
-	return e.client.ContainerKill(noContext, proc.Name, "9")
+	return e.client.ContainerKill(context.TODO(), proc.Name, "9")
 }
 
 func (e *dockerEngine) Wait(proc *engine.Step) (*engine.State, error) {
-	_, err := e.client.ContainerWait(noContext, proc.Name)
+	_, err := e.client.ContainerWait(context.TODO(), proc.Name)
 	if err != nil {
 		// todo
 	}
 
-	info, err := e.client.ContainerInspect(noContext, proc.Name)
+	info, err := e.client.ContainerInspect(context.TODO(), proc.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +147,15 @@ func (e *dockerEngine) Wait(proc *engine.Step) (*engine.State, error) {
 }
 
 func (e *dockerEngine) Tail(proc *engine.Step) (io.ReadCloser, error) {
-	logs, err := e.client.ContainerLogs(noContext, proc.Name, logsOpts)
+	logsOpts := types.ContainerLogsOptions{
+		Follow:     true,
+		ShowStdout: true,
+		ShowStderr: true,
+		Details:    false,
+		Timestamps: false,
+	}
+
+	logs, err := e.client.ContainerLogs(context.TODO(), proc.Name, logsOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -164,11 +173,11 @@ func (e *dockerEngine) Tail(proc *engine.Step) (io.ReadCloser, error) {
 func (e *dockerEngine) Upload(proc *engine.Step, path string, r io.Reader) error {
 	options := types.CopyToContainerOptions{}
 	options.AllowOverwriteDirWithFile = false
-	return e.client.CopyToContainer(noContext, proc.Name, path, r, options)
+	return e.client.CopyToContainer(context.TODO(), proc.Name, path, r, options)
 }
 
 func (e *dockerEngine) Download(proc *engine.Step, path string) (io.ReadCloser, *engine.FileInfo, error) {
-	rc, stat, err := e.client.CopyFromContainer(noContext, proc.Name, path)
+	rc, stat, err := e.client.CopyFromContainer(context.TODO(), proc.Name, path)
 	info := &engine.FileInfo{
 		Path:  path,
 		Name:  stat.Name,
@@ -180,37 +189,23 @@ func (e *dockerEngine) Download(proc *engine.Step, path string) (io.ReadCloser, 
 }
 
 func (e *dockerEngine) Destroy(conf *engine.Config) error {
-	for _, stage := range conf.Stages {
-		for _, step := range stage.Steps {
-			e.client.ContainerKill(noContext, step.Name, "9")
-			e.client.ContainerRemove(noContext, step.Name, removeOpts)
-		}
-	}
-	for _, volume := range conf.Volumes {
-		e.client.VolumeRemove(noContext, volume.Name, true)
-	}
-	for _, network := range conf.Networks {
-		e.client.NetworkRemove(noContext, network.Name)
-	}
-	return nil
-}
-
-var (
-	noContext = context.Background()
-
-	startOpts = types.ContainerStartOptions{}
-
-	removeOpts = types.ContainerRemoveOptions{
+	removeOpts := types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		RemoveLinks:   false,
 		Force:         false,
 	}
 
-	logsOpts = types.ContainerLogsOptions{
-		Follow:     true,
-		ShowStdout: true,
-		ShowStderr: true,
-		Details:    false,
-		Timestamps: false,
+	for _, stage := range conf.Stages {
+		for _, step := range stage.Steps {
+			e.client.ContainerKill(context.TODO(), step.Name, "9")
+			e.client.ContainerRemove(context.TODO(), step.Name, removeOpts)
+		}
 	}
-)
+	for _, volume := range conf.Volumes {
+		e.client.VolumeRemove(context.TODO(), volume.Name, true)
+	}
+	for _, network := range conf.Networks {
+		e.client.NetworkRemove(context.TODO(), network.Name)
+	}
+	return nil
+}

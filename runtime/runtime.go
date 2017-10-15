@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/drone/drone-runtime/engine"
-
 	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/sync/errgroup"
 )
@@ -27,8 +26,8 @@ type Runtime struct {
 // New returns a new runtime using the specified runtime configuration
 // and runtime engine.
 func New(opts ...Option) *Runtime {
-	r := new(Runtime)
-	r.hook = new(Hook)
+	r := &Runtime{}
+	r.hook = &Hook{}
 	for _, opts := range opts {
 		opts(r)
 	}
@@ -225,10 +224,9 @@ func exportAll(state *State) error {
 
 // helper function exports a single file or folder.
 func export(state *State, file *engine.File) error {
-	var (
-		path = file.Path
-		mime = file.Mime
-	)
+	path := file.Path
+	mime := file.Mime
+
 	rc, info, err := state.engine.Download(state.Step, path)
 	if err != nil {
 		return err

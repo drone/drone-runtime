@@ -9,9 +9,9 @@ import (
 
 // Line represents a line in the container logs.
 type Line struct {
-	Number    int    `json:"pos,omityempty"`
+	Number    int    `json:"pos,omitempty"`
 	Message   string `json:"out,omitempty"`
-	Timestemp int64  `json:"time,omitempty"`
+	Timestamp int64  `json:"time,omitempty"`
 }
 
 type lineWriter struct {
@@ -23,7 +23,7 @@ type lineWriter struct {
 }
 
 func newWriter(state *State) *lineWriter {
-	w := new(lineWriter)
+	w := &lineWriter{}
 	w.num = 0
 	w.now = time.Now().UTC()
 	w.state = state
@@ -40,7 +40,7 @@ func (w *lineWriter) Write(p []byte) (n int, err error) {
 	line := &Line{
 		Number:    w.num,
 		Message:   out,
-		Timestemp: int64(time.Since(w.now).Seconds()),
+		Timestamp: int64(time.Since(w.now).Seconds()),
 	}
 
 	if w.state.hook.GotLine != nil {

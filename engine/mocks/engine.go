@@ -5,10 +5,11 @@
 package mocks
 
 import (
+	"io"
+	"reflect"
+
 	. "github.com/drone/drone-runtime/engine"
-	gomock "github.com/golang/mock/gomock"
-	io "io"
-	reflect "reflect"
+	"github.com/golang/mock/gomock"
 )
 
 // MockEngine is a mock of Engine interface

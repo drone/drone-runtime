@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/drone/drone-runtime/engine"
-
 	"github.com/docker/docker/api/types/container"
+	"github.com/drone/drone-runtime/engine"
 )
 
 // returns a container configuration.
@@ -99,7 +98,7 @@ func toHostConfig(proc *engine.Step) *container.HostConfig {
 // helper function that converts a slice of volume paths to a set of
 // unique volume names.
 func toVolumeSet(from []*engine.VolumeMapping) map[string]struct{} {
-	to := map[string]struct{}{}
+	var to map[string]struct{}
 	for _, v := range from {
 		to[v.Target] = struct{}{}
 	}
