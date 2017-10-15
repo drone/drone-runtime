@@ -88,11 +88,11 @@ func main() {
 		runtime.WithHooks(hooks),
 	)
 
-	c, cancel := context.WithTimeout(context.Background(), *t)
-	c = signal.WithContext(c)
+	ctx, cancel := context.WithTimeout(context.Background(), *t)
+	ctx = signal.WithContext(ctx)
 	defer cancel()
 
-	err = r.Run(c)
+	err = r.Run(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}

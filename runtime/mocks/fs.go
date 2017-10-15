@@ -5,11 +5,10 @@
 package mocks
 
 import (
-	"io"
-	"os"
-	"reflect"
-
-	"github.com/golang/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
+	io "io"
+	os "os"
+	reflect "reflect"
 )
 
 // MockFileSystem is a mock of FileSystem interface
