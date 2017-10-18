@@ -9,7 +9,7 @@ import (
 )
 
 func TestWithHooks(t *testing.T) {
-	h := new(Hook)
+	h := &Hook{}
 	r := New(WithHooks(h))
 	if r.hook != h {
 		t.Errorf("Option does not set runtime hooks")
@@ -17,7 +17,7 @@ func TestWithHooks(t *testing.T) {
 }
 
 func TestWithConfig(t *testing.T) {
-	c := new(engine.Config)
+	c := &engine.Config{}
 	r := New(WithConfig(c))
 	if r.config != c {
 		t.Errorf("Option does not set runtime configuration")

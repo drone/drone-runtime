@@ -9,12 +9,12 @@ import (
 
 // Parse parses the pipeline config from an io.Reader.
 func Parse(r io.Reader) (*Config, error) {
-	cfg := new(Config)
-	err := json.NewDecoder(r).Decode(cfg)
+	cfg := Config{}
+	err := json.NewDecoder(r).Decode(&cfg)
 	if err != nil {
 		return nil, err
 	}
-	return cfg, nil
+	return &cfg, nil
 }
 
 // ParseFile parses the pipeline config from a file.

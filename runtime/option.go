@@ -8,9 +8,9 @@ import (
 type Option func(*Runtime)
 
 // WithEngine sets the Runtime engine.
-func WithEngine(engine engine.Engine) Option {
+func WithEngine(e engine.Engine) Option {
 	return func(r *Runtime) {
-		r.engine = engine
+		r.engine = e
 	}
 }
 

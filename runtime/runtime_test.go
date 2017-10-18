@@ -37,13 +37,15 @@ func TestRun(t *testing.T) {
 
 	state := new(engine.State)
 
+	ctx := context.TODO()
+
 	mock := mocks.NewMockEngine(c)
-	mock.EXPECT().Setup(conf)
-	mock.EXPECT().Destroy(conf)
-	mock.EXPECT().Tail(conf.Stages[0].Steps[0]).Return(buf, nil)
-	mock.EXPECT().Wait(conf.Stages[0].Steps[0]).Return(state, nil)
-	mock.EXPECT().Create(conf.Stages[0].Steps[0])
-	mock.EXPECT().Start(conf.Stages[0].Steps[0])
+	mock.EXPECT().Setup(ctx, conf)
+	mock.EXPECT().Destroy(ctx, conf)
+	mock.EXPECT().Tail(ctx, conf.Stages[0].Steps[0]).Return(buf, nil)
+	mock.EXPECT().Wait(ctx, conf.Stages[0].Steps[0]).Return(state, nil)
+	mock.EXPECT().Create(ctx, conf.Stages[0].Steps[0])
+	mock.EXPECT().Start(ctx, conf.Stages[0].Steps[0])
 
 	run := New(
 		WithEngine(mock),
@@ -112,12 +114,14 @@ func TestRunDetached(t *testing.T) {
 
 	buf := ioutil.NopCloser(bytes.NewBufferString(""))
 
+	ctx := context.TODO()
+
 	mock := mocks.NewMockEngine(c)
-	mock.EXPECT().Setup(conf)
-	mock.EXPECT().Destroy(conf)
-	mock.EXPECT().Tail(conf.Stages[0].Steps[0]).Return(buf, nil)
-	mock.EXPECT().Create(conf.Stages[0].Steps[0])
-	mock.EXPECT().Start(conf.Stages[0].Steps[0])
+	mock.EXPECT().Setup(ctx, conf)
+	mock.EXPECT().Destroy(ctx, conf)
+	mock.EXPECT().Tail(ctx, conf.Stages[0].Steps[0]).Return(buf, nil)
+	mock.EXPECT().Create(ctx, conf.Stages[0].Steps[0])
+	mock.EXPECT().Start(ctx, conf.Stages[0].Steps[0])
 
 	run := New(
 		WithEngine(mock),
@@ -149,12 +153,14 @@ func TestRunError(t *testing.T) {
 
 	err := errors.New("dummy error")
 
+	ctx := context.TODO()
+
 	mock := mocks.NewMockEngine(c)
-	mock.EXPECT().Setup(conf)
-	mock.EXPECT().Destroy(conf)
-	mock.EXPECT().Tail(conf.Stages[0].Steps[0]).Return(nil, err)
-	mock.EXPECT().Create(conf.Stages[0].Steps[0])
-	mock.EXPECT().Start(conf.Stages[0].Steps[0])
+	mock.EXPECT().Setup(ctx, conf)
+	mock.EXPECT().Destroy(ctx, conf)
+	mock.EXPECT().Tail(ctx, conf.Stages[0].Steps[0]).Return(nil, err)
+	mock.EXPECT().Create(ctx, conf.Stages[0].Steps[0])
+	mock.EXPECT().Start(ctx, conf.Stages[0].Steps[0])
 	run := New(
 		WithEngine(mock),
 		WithConfig(conf),
@@ -188,13 +194,15 @@ func TestRunErrorExit(t *testing.T) {
 		ExitCode: 255,
 	}
 
+	ctx := context.TODO()
+
 	mock := mocks.NewMockEngine(c)
-	mock.EXPECT().Setup(conf)
-	mock.EXPECT().Destroy(conf)
-	mock.EXPECT().Tail(conf.Stages[0].Steps[0]).Return(buf, nil)
-	mock.EXPECT().Wait(conf.Stages[0].Steps[0]).Return(state, nil)
-	mock.EXPECT().Create(conf.Stages[0].Steps[0])
-	mock.EXPECT().Start(conf.Stages[0].Steps[0])
+	mock.EXPECT().Setup(ctx, conf)
+	mock.EXPECT().Destroy(ctx, conf)
+	mock.EXPECT().Tail(ctx, conf.Stages[0].Steps[0]).Return(buf, nil)
+	mock.EXPECT().Wait(ctx, conf.Stages[0].Steps[0]).Return(state, nil)
+	mock.EXPECT().Create(ctx, conf.Stages[0].Steps[0])
+	mock.EXPECT().Start(ctx, conf.Stages[0].Steps[0])
 	run := New(
 		WithEngine(mock),
 		WithConfig(conf),
@@ -241,13 +249,15 @@ func TestRunErrorOom(t *testing.T) {
 		ExitCode:  255,
 	}
 
+	ctx := context.TODO()
+
 	mock := mocks.NewMockEngine(c)
-	mock.EXPECT().Setup(conf)
-	mock.EXPECT().Destroy(conf)
-	mock.EXPECT().Tail(conf.Stages[0].Steps[0]).Return(buf, nil)
-	mock.EXPECT().Wait(conf.Stages[0].Steps[0]).Return(state, nil)
-	mock.EXPECT().Create(conf.Stages[0].Steps[0])
-	mock.EXPECT().Start(conf.Stages[0].Steps[0])
+	mock.EXPECT().Setup(ctx, conf)
+	mock.EXPECT().Destroy(ctx, conf)
+	mock.EXPECT().Tail(ctx, conf.Stages[0].Steps[0]).Return(buf, nil)
+	mock.EXPECT().Wait(ctx, conf.Stages[0].Steps[0]).Return(state, nil)
+	mock.EXPECT().Create(ctx, conf.Stages[0].Steps[0])
+	mock.EXPECT().Start(ctx, conf.Stages[0].Steps[0])
 	run := New(
 		WithEngine(mock),
 		WithConfig(conf),
@@ -288,9 +298,11 @@ func TestRunCancel(t *testing.T) {
 		},
 	}
 
+	ctx := context.TODO()
+
 	mock := mocks.NewMockEngine(c)
-	mock.EXPECT().Setup(conf)
-	mock.EXPECT().Destroy(conf)
+	mock.EXPECT().Setup(ctx, conf)
+	mock.EXPECT().Destroy(ctx, conf)
 
 	run := New(
 		WithEngine(mock),

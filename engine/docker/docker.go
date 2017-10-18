@@ -34,9 +34,9 @@ func NewEnv() (engine.Engine, error) {
 	return New(cli), nil
 }
 
-func (e *dockerEngine) Setup(conf *engine.Config) error {
+func (e *dockerEngine) Setup(ctx context.Context, conf *engine.Config) error {
 	for _, vol := range conf.Volumes {
-		_, err := e.client.VolumeCreate(noContext, volume.VolumesCreateBody{
+		_, err := e.client.VolumeCreate(ctx, volume.VolumesCreateBody{
 			Name:       vol.Name,
 			Driver:     vol.Driver,
 			DriverOpts: vol.DriverOpts,
@@ -47,7 +47,7 @@ func (e *dockerEngine) Setup(conf *engine.Config) error {
 		}
 	}
 	for _, network := range conf.Networks {
-		_, err := e.client.NetworkCreate(noContext, network.Name, types.NetworkCreate{
+		_, err := e.client.NetworkCreate(ctx, network.Name, types.NetworkCreate{
 			Driver:  network.Driver,
 			Options: network.DriverOpts,
 			// Labels:  defaultLabels,
@@ -59,9 +59,7 @@ func (e *dockerEngine) Setup(conf *engine.Config) error {
 	return nil
 }
 
-func (e *dockerEngine) Create(proc *engine.Step) error {
-	ctx := context.Background()
-
+func (e *dockerEngine) Create(ctx context.Context, proc *engine.Step) error {
 	config := toConfig(proc)
 	hostConfig := toHostConfig(proc)
 
@@ -116,21 +114,22 @@ func (e *dockerEngine) Create(proc *engine.Step) error {
 	return nil
 }
 
-func (e *dockerEngine) Start(proc *engine.Step) error {
-	return e.client.ContainerStart(noContext, proc.Name, startOpts)
+func (e *dockerEngine) Start(ctx context.Context, proc *engine.Step) error {
+	startOpts := types.ContainerStartOptions{}
+	return e.client.ContainerStart(ctx, proc.Name, startOpts)
 }
 
-func (e *dockerEngine) Kill(proc *engine.Step) error {
-	return e.client.ContainerKill(noContext, proc.Name, "9")
+func (e *dockerEngine) Kill(ctx context.Context, proc *engine.Step) error {
+	return e.client.ContainerKill(ctx, proc.Name, "9")
 }
 
-func (e *dockerEngine) Wait(proc *engine.Step) (*engine.State, error) {
-	_, err := e.client.ContainerWait(noContext, proc.Name)
+func (e *dockerEngine) Wait(ctx context.Context, proc *engine.Step) (*engine.State, error) {
+	_, err := e.client.ContainerWait(ctx, proc.Name)
 	if err != nil {
 		// todo
 	}
 
-	info, err := e.client.ContainerInspect(noContext, proc.Name)
+	info, err := e.client.ContainerInspect(ctx, proc.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +144,16 @@ func (e *dockerEngine) Wait(proc *engine.Step) (*engine.State, error) {
 	}, nil
 }
 
-func (e *dockerEngine) Tail(proc *engine.Step) (io.ReadCloser, error) {
-	logs, err := e.client.ContainerLogs(noContext, proc.Name, logsOpts)
+func (e *dockerEngine) Tail(ctx context.Context, proc *engine.Step) (io.ReadCloser, error) {
+	logsOpts := types.ContainerLogsOptions{
+		Follow:     true,
+		ShowStdout: true,
+		ShowStderr: true,
+		Details:    false,
+		Timestamps: false,
+	}
+
+	logs, err := e.client.ContainerLogs(ctx, proc.Name, logsOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -161,14 +168,14 @@ func (e *dockerEngine) Tail(proc *engine.Step) (io.ReadCloser, error) {
 	return rc, nil
 }
 
-func (e *dockerEngine) Upload(proc *engine.Step, path string, r io.Reader) error {
+func (e *dockerEngine) Upload(ctx context.Context, proc *engine.Step, path string, r io.Reader) error {
 	options := types.CopyToContainerOptions{}
 	options.AllowOverwriteDirWithFile = false
-	return e.client.CopyToContainer(noContext, proc.Name, path, r, options)
+	return e.client.CopyToContainer(ctx, proc.Name, path, r, options)
 }
 
-func (e *dockerEngine) Download(proc *engine.Step, path string) (io.ReadCloser, *engine.FileInfo, error) {
-	rc, stat, err := e.client.CopyFromContainer(noContext, proc.Name, path)
+func (e *dockerEngine) Download(ctx context.Context, proc *engine.Step, path string) (io.ReadCloser, *engine.FileInfo, error) {
+	rc, stat, err := e.client.CopyFromContainer(ctx, proc.Name, path)
 	info := &engine.FileInfo{
 		Path:  path,
 		Name:  stat.Name,
@@ -179,38 +186,24 @@ func (e *dockerEngine) Download(proc *engine.Step, path string) (io.ReadCloser, 
 	return rc, info, err
 }
 
-func (e *dockerEngine) Destroy(conf *engine.Config) error {
-	for _, stage := range conf.Stages {
-		for _, step := range stage.Steps {
-			e.client.ContainerKill(noContext, step.Name, "9")
-			e.client.ContainerRemove(noContext, step.Name, removeOpts)
-		}
-	}
-	for _, volume := range conf.Volumes {
-		e.client.VolumeRemove(noContext, volume.Name, true)
-	}
-	for _, network := range conf.Networks {
-		e.client.NetworkRemove(noContext, network.Name)
-	}
-	return nil
-}
-
-var (
-	noContext = context.Background()
-
-	startOpts = types.ContainerStartOptions{}
-
-	removeOpts = types.ContainerRemoveOptions{
+func (e *dockerEngine) Destroy(ctx context.Context, conf *engine.Config) error {
+	removeOpts := types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		RemoveLinks:   false,
 		Force:         false,
 	}
 
-	logsOpts = types.ContainerLogsOptions{
-		Follow:     true,
-		ShowStdout: true,
-		ShowStderr: true,
-		Details:    false,
-		Timestamps: false,
+	for _, stage := range conf.Stages {
+		for _, step := range stage.Steps {
+			e.client.ContainerKill(ctx, step.Name, "9")
+			e.client.ContainerRemove(ctx, step.Name, removeOpts)
+		}
 	}
-)
+	for _, volume := range conf.Volumes {
+		e.client.VolumeRemove(ctx, volume.Name, true)
+	}
+	for _, network := range conf.Networks {
+		e.client.NetworkRemove(ctx, network.Name)
+	}
+	return nil
+}

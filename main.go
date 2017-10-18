@@ -22,15 +22,13 @@ import (
 
 var tty = isatty.IsTerminal(os.Stdout.Fd())
 
-var (
-	b = flag.String("chroot", "", "")
-	p = flag.String("plugin", "", "")
-	t = flag.Duration("timeout", time.Hour, "")
-	v = flag.Bool("version", false, "")
-	h = flag.Bool("help", false, "")
-)
-
 func main() {
+	b := flag.String("chroot", "", "")
+	p := flag.String("plugin", "", "")
+	t := flag.Duration("timeout", time.Hour, "")
+	v := flag.Bool("version", false, "")
+	h := flag.Bool("help", false, "")
+
 	flag.BoolVar(h, "h", false, "")
 	flag.BoolVar(v, "v", false, "")
 	flag.Usage = usage
@@ -69,7 +67,7 @@ func main() {
 		}
 	}
 
-	hooks := new(runtime.Hook)
+	hooks := &runtime.Hook{}
 	hooks.GotLine = term.WriteLine(os.Stdout)
 	if tty {
 		hooks.GotLine = term.WriteLinePretty(os.Stdout)
@@ -90,11 +88,11 @@ func main() {
 		runtime.WithHooks(hooks),
 	)
 
-	c, cancel := context.WithTimeout(context.Background(), *t)
-	c = signal.WithContext(c)
+	ctx, cancel := context.WithTimeout(context.Background(), *t)
+	ctx = signal.WithContext(ctx)
 	defer cancel()
 
-	err = r.Run(c)
+	err = r.Run(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -105,6 +103,5 @@ func usage() {
       --plugin    loads a runtime engine from a .so file
       --timeout   sets an execution timeout
   -v, --version   display the version exit
-  -h, --help      display this help and exit
-`)
+  -h, --help      display this help and exit`)
 }

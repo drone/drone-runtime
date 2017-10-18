@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/drone/drone-runtime/engine"
-
 	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/sync/errgroup"
 )
@@ -27,8 +26,8 @@ type Runtime struct {
 // New returns a new runtime using the specified runtime configuration
 // and runtime engine.
 func New(opts ...Option) *Runtime {
-	r := new(Runtime)
-	r.hook = new(Hook)
+	r := &Runtime{}
+	r.hook = &Hook{}
 	for _, opts := range opts {
 		opts(r)
 	}
@@ -36,15 +35,15 @@ func New(opts ...Option) *Runtime {
 }
 
 // Run starts the pipeline and waits for it to complete.
-func (r *Runtime) Run(c context.Context) error {
-	return r.Resume(c, 0)
+func (r *Runtime) Run(ctx context.Context) error {
+	return r.Resume(ctx, 0)
 }
 
 // Resume starts the pipeline at the specified stage and waits
 // for it to complete.
-func (r *Runtime) Resume(c context.Context, start int) error {
+func (r *Runtime) Resume(ctx context.Context, start int) error {
 	defer func() {
-		r.engine.Destroy(r.config) // cleanup
+		r.engine.Destroy(ctx, r.config) // cleanup
 	}()
 
 	r.error = nil
@@ -57,7 +56,7 @@ func (r *Runtime) Resume(c context.Context, start int) error {
 		}
 	}
 
-	if err := r.engine.Setup(r.config); err != nil {
+	if err := r.engine.Setup(ctx, r.config); err != nil {
 		return err
 	}
 
@@ -66,7 +65,7 @@ func (r *Runtime) Resume(c context.Context, start int) error {
 			continue
 		}
 		select {
-		case <-c.Done():
+		case <-ctx.Done():
 			return ErrCancel
 		case err := <-r.execAll(stage.Steps):
 			if err != nil {
@@ -103,6 +102,8 @@ func (r *Runtime) execAll(group []*engine.Step) <-chan error {
 }
 
 func (r *Runtime) exec(step *engine.Step) error {
+	ctx := context.TODO()
+
 	switch {
 	case r.error != nil && step.OnFailure == false:
 		return nil
@@ -119,7 +120,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		}
 	}
 
-	if err := r.engine.Create(step); err != nil {
+	if err := r.engine.Create(ctx, step); err != nil {
 		return err
 	}
 
@@ -130,11 +131,11 @@ func (r *Runtime) exec(step *engine.Step) error {
 		}
 	}
 
-	if err := r.engine.Start(step); err != nil {
+	if err := r.engine.Start(ctx, step); err != nil {
 		return err
 	}
 
-	rc, err := r.engine.Tail(step)
+	rc, err := r.engine.Tail(ctx, step)
 	if err != nil {
 		return err
 	}
@@ -154,7 +155,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		rc.Close()
 	}()
 
-	wait, err := r.engine.Wait(step)
+	wait, err := r.engine.Wait(ctx, step)
 	if err != nil {
 		return err
 	}
@@ -225,11 +226,12 @@ func exportAll(state *State) error {
 
 // helper function exports a single file or folder.
 func export(state *State, file *engine.File) error {
-	var (
-		path = file.Path
-		mime = file.Mime
-	)
-	rc, info, err := state.engine.Download(state.Step, path)
+	ctx := context.TODO()
+
+	path := file.Path
+	mime := file.Mime
+
+	rc, info, err := state.engine.Download(ctx, state.Step, path)
 	if err != nil {
 		return err
 	}
@@ -252,7 +254,9 @@ func backupAll(state *State) error {
 
 // helper function to backup a single file or folder.
 func backup(s *State, b *engine.Snapshot) error {
-	src, _, err := s.engine.Download(s.Step, b.Source)
+	ctx := context.TODO()
+
+	src, _, err := s.engine.Download(ctx, s.Step, b.Source)
 	if err != nil {
 		return err
 	}
@@ -279,6 +283,8 @@ func restoreAll(state *State) error {
 
 // helper function to restore a single file or folder.
 func restore(s *State, b *engine.Snapshot) error {
+	ctx := context.TODO()
+
 	var rc io.ReadCloser
 	if strings.HasPrefix(b.Source, "data:") {
 		u, err := dataurl.DecodeString(b.Source)
@@ -296,5 +302,5 @@ func restore(s *State, b *engine.Snapshot) error {
 	}
 	defer rc.Close()
 
-	return s.engine.Upload(s.Step, b.Target, rc)
+	return s.engine.Upload(ctx, s.Step, b.Target, rc)
 }

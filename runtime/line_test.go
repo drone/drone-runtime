@@ -7,17 +7,16 @@ import (
 )
 
 func TestLineWriter(t *testing.T) {
-	var (
-		line  *Line
-		hook  = new(Hook)
-		state = new(State)
-	)
+	line := &Line{}
+	hook := &Hook{}
+	state := &State{}
+
 	hook.GotLine = func(_ *State, l *Line) error {
 		line = l
 		return nil
 	}
 	state.hook = hook
-	state.Step = new(engine.Step)
+	state.Step = &engine.Step{}
 	state.Step.Secrets = []*engine.Secret{
 		{Name: "foo", Value: "bar", Mask: true},
 	}
