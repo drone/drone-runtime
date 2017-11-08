@@ -20,7 +20,17 @@ func TestDockerConvertNetwork(t *testing.T) {
 }
 
 func TestDockerConvertVolume(t *testing.T) {
-	t.SkipNow()
+	from := []*engine.VolumeMapping{
+		{Target: "/root"},
+	}
+
+	want := map[string]struct{}{
+		"/root": struct{}{},
+	}
+	got := toVolumeSet(from)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Want volume set %v, got %v", want, got)
+	}
 }
 
 func TestDockerConvertDevice(t *testing.T) {

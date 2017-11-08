@@ -98,7 +98,7 @@ func toHostConfig(proc *engine.Step) *container.HostConfig {
 // helper function that converts a slice of volume paths to a set of
 // unique volume names.
 func toVolumeSet(from []*engine.VolumeMapping) map[string]struct{} {
-	var to map[string]struct{}
+	to := map[string]struct{}{}
 	for _, v := range from {
 		to[v.Target] = struct{}{}
 	}
