@@ -50,6 +50,7 @@ type (
 		NetworkMode  string            `json:"network_mode,omitempty"`
 		IpcMode      string            `json:"ipc_mode,omitempty"`
 		Exports      []*File           `json:"exports,omitempty"`
+		Sysctls      map[string]string `json:"sysctls,omitempty"`
 		Backup       []*Snapshot       `json:"backup,omitempty"`
 		Restore      []*Snapshot       `json:"restore,omitempty"`
 	}
