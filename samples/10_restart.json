@@ -1,0 +1,33 @@
+{
+	"version": 1,
+	"pipeline": [
+		{
+			"name": "stage_0",
+			"alias": "stage_0",
+			"steps": [
+				{
+					"name": "step_0",
+					"alias": "step_0",
+					"image": "alpine:3.6",
+					"working_dir": "/",
+					"entrypoint": [
+						"/bin/sh",
+						"-c"
+					],
+					"command": [
+						"echo hello world"
+					],
+					"on_success": true,
+					"restart_policy": {
+						"condition": "on-failure",
+						"delay": "5s",
+						"max_attempts": 5,
+						"window": "10s"
+					}
+				}
+			]
+		}
+	],
+	"networks": [ ],
+	"volumes": [ ]
+}

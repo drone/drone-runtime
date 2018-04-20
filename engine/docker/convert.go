@@ -93,6 +93,10 @@ func toHostConfig(proc *engine.Step) *container.HostConfig {
 	// 	config.OomKillDisable = &proc.OomKillDisable
 	// }
 
+	if proc.RestartPolicy != nil {
+		config.RestartPolicy = toRestartPolicy(proc.RestartPolicy)
+	}
+
 	return config
 }
 
@@ -141,6 +145,22 @@ func toDevices(from []*engine.DeviceMapping) []container.DeviceMapping {
 			CgroupPermissions: "rwm",
 		})
 	}
+	return to
+}
+
+func toRestartPolicy(from *engine.RestartPolicy) container.RestartPolicy {
+	var to container.RestartPolicy
+	switch from.Condition {
+	case "none":
+		to.Name = "no"
+	case "on-failure":
+		to.Name = "on-failure"
+	case "any":
+		fallthrough
+	default:
+		to.Name = "always"
+	}
+	to.MaximumRetryCount = from.MaxAttempts
 	return to
 }
 
