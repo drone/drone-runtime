@@ -43,7 +43,11 @@ func (r *Runtime) Run(ctx context.Context) error {
 // for it to complete.
 func (r *Runtime) Resume(ctx context.Context, start int) error {
 	defer func() {
-		r.engine.Destroy(ctx, r.config) // cleanup
+		// note that we use a new context to destroy the
+		// environment to ensure it is not in a canceled
+		// state.
+		r.engine.Destroy(
+			context.Background(), r.config)
 	}()
 
 	r.error = nil
