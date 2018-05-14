@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/drone/drone-runtime/engine"
 )
 
@@ -16,7 +17,19 @@ func TestDockerConvertHostConfig(t *testing.T) {
 }
 
 func TestDockerConvertNetwork(t *testing.T) {
-	t.SkipNow()
+	from := &engine.Step{
+		Networks: []*engine.NetworkMapping{{
+			Name:    "test",
+			Aliases: []string{"foo", "bar"},
+			Ports:   []int{80, 443},
+		}},
+	}
+
+	want := nat.PortSet{}
+	got := toConfig(from)
+	if !reflect.DeepEqual(got.ExposedPorts, want) {
+		t.Errorf("Want network %+v, got %+v", want, got.ExposedPorts)
+	}
 }
 
 func TestDockerConvertVolume(t *testing.T) {
@@ -25,7 +38,7 @@ func TestDockerConvertVolume(t *testing.T) {
 	}
 
 	want := map[string]struct{}{
-		"/root": struct{}{},
+		"/root": {},
 	}
 	got := toVolumeSet(from)
 	if !reflect.DeepEqual(got, want) {
