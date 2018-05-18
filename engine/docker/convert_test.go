@@ -25,8 +25,9 @@ func TestDockerConvertNetwork(t *testing.T) {
 		}},
 	}
 
-	want := nat.PortSet{}
+	want := nat.PortSet{"80/TCP": {}, "443/TCP": {}}
 	got := toConfig(from)
+
 	if !reflect.DeepEqual(got.ExposedPorts, want) {
 		t.Errorf("Want network %+v, got %+v", want, got.ExposedPorts)
 	}

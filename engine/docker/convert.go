@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"strings"
 
+	"fmt"
+
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 	"github.com/drone/drone-runtime/engine"
 )
 
@@ -18,13 +21,27 @@ func toConfig(proc *engine.Step) *container.Config {
 		AttachStdout: true,
 		AttachStderr: true,
 	}
+
+	if len(proc.Networks) != 0 {
+		ports := make(nat.PortSet)
+		for _, network := range proc.Networks {
+			for _, port := range network.Ports {
+				natPort, err := nat.NewPort("TCP", fmt.Sprintf("%d", port))
+				if err != nil {
+					panic(err)
+				}
+				ports[natPort] = struct{}{}
+			}
+		}
+		config.ExposedPorts = ports
+	}
+
+	for _, secret := range proc.Secrets {
+		config.Env = append(config.Env, secret.Name+"="+secret.Value)
+	}
+
 	if len(proc.Environment) != 0 {
 		config.Env = toEnv(proc.Environment)
-	}
-	if len(proc.Secrets) != 0 {
-		for _, secret := range proc.Secrets {
-			config.Env = append(config.Env, secret.Name+"="+secret.Value)
-		}
 	}
 	if len(proc.Command) != 0 {
 		config.Cmd = proc.Command
