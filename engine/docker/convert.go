@@ -3,9 +3,8 @@ package docker
 import (
 	"encoding/base64"
 	"encoding/json"
-	"strings"
-
 	"fmt"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
