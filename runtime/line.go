@@ -37,18 +37,23 @@ func (w *lineWriter) Write(p []byte) (n int, err error) {
 		out = w.rep.Replace(out)
 	}
 
-	line := &Line{
-		Number:    w.num,
-		Message:   out,
-		Timestamp: int64(time.Since(w.now).Seconds()),
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+
+	for _, l := range lines {
+		line := &Line{
+			Number:    w.num,
+			Message:   l + "\n",
+			Timestamp: int64(time.Since(w.now).Seconds()),
+		}
+
+		if w.state.hook.GotLine != nil {
+			w.state.hook.GotLine(w.state, line)
+		}
+		w.num++
+
+		w.lines = append(w.lines, line)
 	}
 
-	if w.state.hook.GotLine != nil {
-		w.state.hook.GotLine(w.state, line)
-	}
-	w.num++
-
-	w.lines = append(w.lines, line)
 	return len(p), nil
 }
 

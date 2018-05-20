@@ -26,11 +26,47 @@ func TestLineWriter(t *testing.T) {
 	if line == nil {
 		t.Error("Expect LineFunc invoked")
 	}
-	if got, want := line.Message, "foo********"; got != want {
+	if got, want := line.Message, "foo********\n"; got != want {
 		t.Errorf("Got line %q, want %q", got, want)
 	}
 	if got, want := line.Number, 0; got != want {
 		t.Errorf("Got line %d, want %d", got, want)
+	}
+}
+
+func TestMultiLineWriter(t *testing.T) {
+	state := &State{}
+	state.hook = &Hook{}
+	state.Step = &engine.Step{}
+
+	w := newWriter(state)
+
+	written, err := w.Write([]byte("foo\nbar\n"))
+	if err != nil {
+		t.Errorf("Expect no error but got: %v", err)
+	}
+	if written != 8 {
+		t.Errorf("Expect to write 8 chars but written: %d", written)
+	}
+
+	if len(w.lines) != 2 {
+		t.Errorf("Expect 2 lines to be crated, got %d", len(w.lines))
+	}
+
+	expected := []Line{
+		{Number: 0, Message: "foo\n", Timestamp: 0},
+		{Number: 1, Message: "bar\n", Timestamp: 0},
+	}
+	for i, exp := range expected {
+		if w.lines[i].Number != exp.Number {
+			t.Errorf("Got line number %d, want %d", w.lines[i].Number, exp.Number)
+		}
+		if w.lines[i].Message != exp.Message {
+			t.Errorf("Got line %s, want %s", w.lines[i].Message, exp.Message)
+		}
+		if w.lines[i].Timestamp != exp.Timestamp {
+			t.Errorf("Got line timestamp %d, want %d", w.lines[i].Timestamp, exp.Timestamp)
+		}
 	}
 }
 
