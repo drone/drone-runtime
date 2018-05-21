@@ -25,7 +25,7 @@ func TestDockerConvertVolume(t *testing.T) {
 	}
 
 	want := map[string]struct{}{
-		"/root": struct{}{},
+		"/root": {},
 	}
 	got := toVolumeSet(from)
 	if !reflect.DeepEqual(got, want) {

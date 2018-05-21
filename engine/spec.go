@@ -66,6 +66,7 @@ type (
 	NetworkMapping struct {
 		Name    string   `json:"name"`
 		Aliases []string `json:"aliases"`
+		Ports   []int    `json:"ports"`
 	}
 
 	// Network defines a container network.
