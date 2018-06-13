@@ -26,7 +26,7 @@ func TestLineWriter(t *testing.T) {
 	if line == nil {
 		t.Error("Expect LineFunc invoked")
 	}
-	if got, want := line.Message, "foo********\n"; got != want {
+	if got, want := line.Message, "foo********"; got != want {
 		t.Errorf("Got line %q, want %q", got, want)
 	}
 	if got, want := line.Number, 0; got != want {

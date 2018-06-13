@@ -37,12 +37,16 @@ func (w *lineWriter) Write(p []byte) (n int, err error) {
 		out = w.rep.Replace(out)
 	}
 
-	lines := strings.Split(strings.TrimSpace(out), "\n")
+	lines := strings.SplitAfter(out, "\n")
 
 	for _, l := range lines {
+		if l == "" {
+			continue
+		}
+
 		line := &Line{
 			Number:    w.num,
-			Message:   l + "\n",
+			Message:   l,
 			Timestamp: int64(time.Since(w.now).Seconds()),
 		}
 
