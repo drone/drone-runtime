@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"testing"
 
@@ -315,5 +316,60 @@ func TestRunCancel(t *testing.T) {
 	err := run.Run(ctx)
 	if err != ErrCancel {
 		t.Errorf("Expect ErrCancel when context is cancelled, got %s", err)
+	}
+}
+
+// TestRunStartErr verifies the runtime exits and returns an error if there
+// is a failure to create or start a container step.
+func TestRunStartErr(t *testing.T) {
+	c := gomock.NewController(t)
+	defer c.Finish()
+
+	conf := &engine.Config{
+		Stages: []*engine.Stage{
+			{
+				Name: "stage_0",
+				Steps: []*engine.Step{
+					{Name: "step_0", OnSuccess: true},
+				},
+			},
+		},
+	}
+
+	ctx := context.TODO()
+
+	mock := mocks.NewMockEngine(c)
+	mock.EXPECT().Setup(gomock.Any(), conf)
+	mock.EXPECT().Destroy(gomock.Any(), conf)
+	mock.EXPECT().Create(gomock.Any(), conf.Stages[0].Steps[0]).Return(io.EOF)
+
+	hookInvoked := false
+	hooks := &Hook{
+		AfterEach: func(state *State) error {
+			hookInvoked = true
+
+			if state.State.ExitCode != 255 {
+				t.Errorf("Want Exit Code 255 on container error")
+			}
+			if state.State.Exited == false {
+				t.Errorf("Want Exited true on container error")
+			}
+			return nil
+		},
+	}
+
+	run := New(
+		WithEngine(mock),
+		WithConfig(conf),
+		WithHooks(hooks),
+	)
+
+	err := run.Run(ctx)
+	if err != io.EOF {
+		t.Errorf("Expect Exit Error")
+	}
+
+	if !hookInvoked {
+		t.Errorf("Expect AfterEach hook invoked")
 	}
 }

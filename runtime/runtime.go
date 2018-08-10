@@ -125,6 +125,14 @@ func (r *Runtime) exec(step *engine.Step) error {
 	}
 
 	if err := r.engine.Create(ctx, step); err != nil {
+		// TODO(bradrydzewski) refactor duplicate code
+		if r.hook.AfterEach != nil {
+			r.hook.AfterEach(
+				snapshot(r, step, &engine.State{
+					ExitCode: 255, Exited: true,
+				}),
+			)
+		}
 		return err
 	}
 
@@ -136,11 +144,27 @@ func (r *Runtime) exec(step *engine.Step) error {
 	}
 
 	if err := r.engine.Start(ctx, step); err != nil {
+		// TODO(bradrydzewski) refactor duplicate code
+		if r.hook.AfterEach != nil {
+			r.hook.AfterEach(
+				snapshot(r, step, &engine.State{
+					ExitCode: 255, Exited: true,
+				}),
+			)
+		}
 		return err
 	}
 
 	rc, err := r.engine.Tail(ctx, step)
 	if err != nil {
+		// TODO(bradrydzewski) refactor duplicate code
+		if r.hook.AfterEach != nil {
+			r.hook.AfterEach(
+				snapshot(r, step, &engine.State{
+					ExitCode: 255, Exited: true,
+				}),
+			)
+		}
 		return err
 	}
 

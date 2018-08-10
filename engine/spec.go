@@ -18,6 +18,7 @@ type (
 
 	// Step defines a container process.
 	Step struct {
+		ID           int64             `json:"id"`
 		Name         string            `json:"name"`
 		Alias        string            `json:"alias,omitempty"`
 		Image        string            `json:"image,omitempty"`
@@ -30,6 +31,7 @@ type (
 		Labels       map[string]string `json:"labels,omitempty"`
 		Entrypoint   []string          `json:"entrypoint,omitempty"`
 		Command      []string          `json:"command,omitempty"`
+		Commands     []string          `json:"commands,omitempty"`
 		ExtraHosts   []string          `json:"extra_hosts,omitempty"`
 		Volumes      []*VolumeMapping  `json:"volumes,omitempty"`
 		Tmpfs        []string          `json:"tmpfs,omitempty"`
