@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/drone/drone-runtime/engine"
 )
 
@@ -33,6 +34,12 @@ func toConfig(proc *engine.Step) *container.Config {
 	}
 	if len(proc.Volumes) != 0 {
 		config.Volumes = toVolumeSet(proc.Volumes)
+	}
+	if len(proc.Commands) != 0 {
+		// TODO(bradrydzewski) currently the commands are converted
+		// to a shell script by the yaml compiler. How the script is
+		// generated and passed to the container may be runtime-specific.
+		// so need to decide where this belongs.
 	}
 	return config
 }
@@ -88,6 +95,16 @@ func toHostConfig(proc *engine.Step) *container.HostConfig {
 		parts := strings.Split(path, ":")
 		config.Tmpfs[parts[0]] = parts[1]
 	}
+	for _, volume := range proc.Volumes {
+		if !strings.HasPrefix(volume.Source, `\\.\pipe\`) {
+			continue
+		}
+		config.Mounts = append(config.Mounts, mount.Mount{
+			Source: volume.Source,
+			Target: volume.Target,
+			Type:   "npipe",
+		})
+	}
 	// if proc.OomKillDisable {
 	// 	config.OomKillDisable = &proc.OomKillDisable
 	// }
@@ -100,6 +117,9 @@ func toHostConfig(proc *engine.Step) *container.HostConfig {
 func toVolumeSet(from []*engine.VolumeMapping) map[string]struct{} {
 	to := map[string]struct{}{}
 	for _, v := range from {
+		if strings.HasPrefix(v.Source, `\\.\pipe\`) {
+			continue
+		}
 		to[v.Target] = struct{}{}
 	}
 	return to
@@ -108,6 +128,9 @@ func toVolumeSet(from []*engine.VolumeMapping) map[string]struct{} {
 func toVolumeSlice(from []*engine.VolumeMapping) []string {
 	var to []string
 	for _, v := range from {
+		if strings.HasPrefix(v.Source, `\\.\pipe\`) {
+			continue
+		}
 		var path string
 		if v.Name != "" {
 			path = v.Name + ":" + v.Target
