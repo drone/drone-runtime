@@ -1,0 +1,44 @@
+{
+	"metadata": {
+		"uid": "uid_ntsKKapGMZilZ3yQ",
+		"namespace": "ns_ntsKKapGMZilZ3yQ",
+		"name": "postgres_test"
+	},
+	"secrets": null,
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_Oxx4WbJUQ3Uc1g7L",
+				"namespace": "ns_ntsKKapGMZilZ3yQ",
+				"name": "postgres"
+			},
+			"detach": true,
+			"docker": {
+				"image": "postgres:9-alpine",
+				"pull_policy": "default"
+			},
+			"environment": {
+				"POSTGRES_DB": "test",
+				"POSTGRES_USER": "postgres"
+			}
+		},
+		{
+			"metadata": {
+				"uid": "uid_QKUv7AEQq67t9eTH",
+				"namespace": "ns_ntsKKapGMZilZ3yQ",
+				"name": "pinger"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"sleep 15 && psql -U postgres -d test -h postgres -c 'SELECT table_name FROM information_schema.tables;'"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "postgres:9-alpine"
+			}
+		}
+	],
+	"docker": {}
+}

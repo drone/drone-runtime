@@ -9,10 +9,10 @@ import (
 )
 
 // Symbol the symbol name used to lookup the plugin provider value.
-const Symbol = "Engine"
+const Symbol = "Factory"
 
-// Open returns an Engine dynamically loaded from a plugin.
-func Open(path string) (engine.Engine, error) {
+// Open returns a Factory dynamically loaded from a plugin.
+func Open(path string) (engine.Factory, error) {
 	panic(
 		errors.New("unsupported operating system"),
 	)

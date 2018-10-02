@@ -1,26 +1,21 @@
 package runtime
 
 import (
-	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
-	"strings"
 	"time"
 
 	"github.com/drone/drone-runtime/engine"
-	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/sync/errgroup"
 )
 
 // Runtime executes a pipeline configuration.
 type Runtime struct {
 	engine engine.Engine
-	config *engine.Config
+	config *engine.Spec
 	hook   *Hook
 	start  int64
 	error  error
-	fs     FileSystem
 }
 
 // New returns a new runtime using the specified runtime configuration
@@ -46,8 +41,7 @@ func (r *Runtime) Resume(ctx context.Context, start int) error {
 		// note that we use a new context to destroy the
 		// environment to ensure it is not in a canceled
 		// state.
-		r.engine.Destroy(
-			context.Background(), r.config)
+		r.engine.Destroy(context.Background())
 	}()
 
 	r.error = nil
@@ -60,18 +54,19 @@ func (r *Runtime) Resume(ctx context.Context, start int) error {
 		}
 	}
 
-	if err := r.engine.Setup(ctx, r.config); err != nil {
+	if err := r.engine.Setup(ctx); err != nil {
 		return err
 	}
 
-	for i, stage := range r.config.Stages {
+	for i, step := range r.config.Steps {
+		steps := []*engine.Step{step}
 		if i < start {
 			continue
 		}
 		select {
 		case <-ctx.Done():
 			return ErrCancel
-		case err := <-r.execAll(stage.Steps):
+		case err := <-r.execAll(steps):
 			if err != nil {
 				r.error = err
 			}
@@ -106,12 +101,12 @@ func (r *Runtime) execAll(group []*engine.Step) <-chan error {
 }
 
 func (r *Runtime) exec(step *engine.Step) error {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	switch {
-	case r.error != nil && step.OnFailure == false:
+	case r.error != nil && step.RunPolicy == engine.RunOnSuccess:
 		return nil
-	case r.error == nil && step.OnSuccess == false:
+	case r.error == nil && step.RunPolicy == engine.RunOnFailure:
 		return nil
 	}
 
@@ -134,13 +129,6 @@ func (r *Runtime) exec(step *engine.Step) error {
 			)
 		}
 		return err
-	}
-
-	if r.fs != nil {
-		state := snapshot(r, step, nil)
-		if err := restoreAll(state); err != nil {
-			return err
-		}
 	}
 
 	if err := r.engine.Start(ctx, step); err != nil {
@@ -174,7 +162,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		return stream(state, rc)
 	})
 
-	if step.Detached {
+	if step.Detach {
 		return nil // do not wait for service containers to complete.
 	}
 
@@ -188,30 +176,16 @@ func (r *Runtime) exec(step *engine.Step) error {
 		return err
 	}
 
-	if r.hook.GotFile != nil {
-		state := snapshot(r, step, wait)
-		g.Go(func() error {
-			return exportAll(state)
-		})
-	}
-
-	if r.fs != nil {
-		state := snapshot(r, step, wait)
-		g.Go(func() error {
-			return backupAll(state)
-		})
-	}
-
 	err = g.Wait() // wait for background tasks to complete.
 
 	if wait.OOMKilled {
 		err = &OomError{
-			Name: step.Name,
+			Name: step.Metadata.Name,
 			Code: wait.ExitCode,
 		}
 	} else if wait.ExitCode != 0 {
 		err = &ExitError{
-			Name: step.Name,
+			Name: step.Metadata.Name,
 			Code: wait.ExitCode,
 		}
 	}
@@ -223,7 +197,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		}
 	}
 
-	if step.ErrIgnore {
+	if step.IgnoreErr {
 		return nil
 	}
 	return err
@@ -240,97 +214,4 @@ func stream(state *State, rc io.ReadCloser) error {
 		return state.hook.GotLogs(state, w.lines)
 	}
 	return nil
-}
-
-// helper function exports files and folders in parallel.
-func exportAll(state *State) error {
-	var g errgroup.Group
-	for _, file := range state.Step.Exports {
-		file := file
-		g.Go(func() error {
-			return export(state, file)
-		})
-	}
-	return g.Wait()
-}
-
-// helper function exports a single file or folder.
-func export(state *State, file *engine.File) error {
-	ctx := context.TODO()
-
-	path := file.Path
-	mime := file.Mime
-
-	rc, info, err := state.engine.Download(ctx, state.Step, path)
-	if err != nil {
-		return err
-	}
-	defer rc.Close()
-	info.Mime = mime
-	return state.hook.GotFile(state, info, rc)
-}
-
-// helper function to backup files and folders in parallel.
-func backupAll(state *State) error {
-	var g errgroup.Group
-	for _, b := range state.Step.Backup {
-		b := b
-		g.Go(func() error {
-			return backup(state, b)
-		})
-	}
-	return g.Wait()
-}
-
-// helper function to backup a single file or folder.
-func backup(s *State, b *engine.Snapshot) error {
-	ctx := context.TODO()
-
-	src, _, err := s.engine.Download(ctx, s.Step, b.Source)
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-	dst, err := s.fs.Create(b.Target)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(dst, src)
-	src.Close()
-	dst.Close()
-	return err
-}
-
-// helper function to restore files and folders serially.
-func restoreAll(state *State) error {
-	for _, b := range state.Step.Restore {
-		if err := restore(state, b); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// helper function to restore a single file or folder.
-func restore(s *State, b *engine.Snapshot) error {
-	ctx := context.TODO()
-
-	var rc io.ReadCloser
-	if strings.HasPrefix(b.Source, "data:") {
-		u, err := dataurl.DecodeString(b.Source)
-		if err != nil {
-			return err
-		}
-		r := bytes.NewBuffer(u.Data)
-		rc = ioutil.NopCloser(r)
-	} else {
-		var err error
-		rc, err = s.fs.Open(b.Source)
-		if err != nil {
-			return err
-		}
-	}
-	defer rc.Close()
-
-	return s.engine.Upload(ctx, s.Step, b.Target, rc)
 }

@@ -1,0 +1,47 @@
+{
+	"metadata": {
+		"uid": "uid_GPzK101Yka7Hf9JD",
+		"namespace": "ns_cwOiiTAoLeYVHWVv",
+		"name": "docker_test"
+	},
+	"secrets": null,
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_gkZrU925ZbAWEDoy",
+				"namespace": "ns_cwOiiTAoLeYVHWVv",
+				"name": "ping"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -x; set -e; docker info"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "docker:18"
+            },
+            "volumes": [
+                {
+                    "name": "dockersock",
+                    "path": "/var/run/docker.sock"
+                }
+            ]
+		}
+	],
+	"docker": {
+        "volumes": [
+            {
+                "metadata": {
+                    "uid": "uid_NttbpIbQLKCyG8uI",
+                    "namespace": "ns_cwOiiTAoLeYVHWVv",
+                    "name": "dockersock"
+                },
+                "host": {
+					"path": "/var/run/docker.sock"
+				}
+            }
+        ]
+    }
+}

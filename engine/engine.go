@@ -1,16 +1,21 @@
 package engine
 
-//go:generate mockgen -source=engine.go -destination=mocks/engine.go -package=mocks -imports=.=github.com/drone/drone-runtime/engine
-
+//go:generate mockgen -source=engine.go -destination=mocks/engine.go
+//-package=mocks -imports=.=github.com/drone/drone-runtime/engine
 import (
 	"context"
 	"io"
 )
 
+// Factory defines a runtime engine factory.
+type Factory interface {
+	Create(*Spec) Engine
+}
+
 // Engine defines a runtime engine for pipeline execution.
 type Engine interface {
 	// Setup the pipeline environment.
-	Setup(context.Context, *Config) error
+	Setup(context.Context) error
 
 	// Create creates the pipeline state.
 	Create(context.Context, *Step) error
@@ -24,12 +29,6 @@ type Engine interface {
 	// Tail the pipeline step logs.
 	Tail(context.Context, *Step) (io.ReadCloser, error)
 
-	// Upload uploads the file or data to the environment.
-	Upload(context.Context, *Step, string, io.Reader) error
-
-	// Download downloads the file or data from the environment.
-	Download(context.Context, *Step, string) (io.ReadCloser, *FileInfo, error)
-
 	// Destroy the pipeline environment.
-	Destroy(context.Context, *Config) error
+	Destroy(context.Context) error
 }

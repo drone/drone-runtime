@@ -15,7 +15,7 @@ func WithEngine(e engine.Engine) Option {
 }
 
 // WithConfig sets the Runtime configuration.
-func WithConfig(c *engine.Config) Option {
+func WithConfig(c *engine.Spec) Option {
 	return func(r *Runtime) {
 		r.config = c
 	}
@@ -27,12 +27,5 @@ func WithHooks(h *Hook) Option {
 		if h != nil {
 			r.hook = h
 		}
-	}
-}
-
-// WithFileSystem sets the Runtime virtual filesystem.
-func WithFileSystem(fs FileSystem) Option {
-	return func(r *Runtime) {
-		r.fs = fs
 	}
 }

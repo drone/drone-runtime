@@ -1,109 +1,41 @@
 package docker
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
 	"io/ioutil"
+	"strings"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/drone/drone-runtime/engine"
+	"github.com/drone/drone-runtime/engine/docker/authutil"
+	"github.com/drone/drone-runtime/engine/docker/stdcopy"
+
+	"docker.io/go-docker"
+	"docker.io/go-docker/api/types"
+	"docker.io/go-docker/api/types/volume"
+	"github.com/docker/distribution/reference"
 )
 
 type dockerEngine struct {
-	client client.APIClient
+	spec   *engine.Spec
+	client docker.APIClient
 }
 
-// New returns a new Docker Engine using the given client.
-func New(cli client.APIClient) engine.Engine {
-	return &dockerEngine{
-		client: cli,
-	}
-}
+func (e *dockerEngine) Setup(ctx context.Context) error {
+	if e.spec.Docker != nil {
+		// creates the default temporary (local) volumes
+		// that are mounted into each container step.
+		for _, vol := range e.spec.Docker.Volumes {
+			if vol.EmptyDir == nil {
+				continue
+			}
 
-// NewEnv returns a new Docker Engine using the client connection
-// environment variables.
-func NewEnv() (engine.Engine, error) {
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return nil, err
-	}
-	return New(cli), nil
-}
-
-func (e *dockerEngine) Setup(ctx context.Context, conf *engine.Config) error {
-	for _, vol := range conf.Volumes {
-		_, err := e.client.VolumeCreate(ctx, volume.VolumesCreateBody{
-			Name:       vol.Name,
-			Driver:     vol.Driver,
-			DriverOpts: vol.DriverOpts,
-			// Labels:     defaultLabels,
-		})
-		if err != nil {
-			return err
-		}
-	}
-	for _, network := range conf.Networks {
-		_, err := e.client.NetworkCreate(ctx, network.Name, types.NetworkCreate{
-			Driver:  network.Driver,
-			Options: network.DriverOpts,
-			// Labels:  defaultLabels,
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (e *dockerEngine) Create(ctx context.Context, proc *engine.Step) error {
-	config := toConfig(proc)
-	hostConfig := toHostConfig(proc)
-
-	// create pull options with encoded authorization credentials.
-	pullopts := types.ImagePullOptions{}
-	if proc.AuthConfig.Username != "" && proc.AuthConfig.Password != "" {
-		pullopts.RegistryAuth = encodeAuthToBase64(proc.AuthConfig)
-	}
-
-	// automatically pull the latest version of the image if requested
-	// by the process configuration.
-	if proc.Pull {
-		rc, perr := e.client.ImagePull(ctx, config.Image, pullopts)
-		if perr == nil {
-			io.Copy(ioutil.Discard, rc)
-			rc.Close()
-		}
-		// fix for drone/drone#1917
-		if perr != nil && proc.AuthConfig.Password != "" {
-			return perr
-		}
-	}
-
-	_, err := e.client.ContainerCreate(ctx, config, hostConfig, nil, proc.Name)
-	if client.IsErrImageNotFound(err) {
-		// automatically pull and try to re-create the image if the
-		// failure is caused because the image does not exist.
-		rc, perr := e.client.ImagePull(ctx, config.Image, pullopts)
-		if perr != nil {
-			return perr
-		}
-		io.Copy(ioutil.Discard, rc)
-		rc.Close()
-
-		_, err = e.client.ContainerCreate(ctx, config, hostConfig, nil, proc.Name)
-	}
-	if err != nil {
-		return err
-	}
-
-	if len(proc.NetworkMode) == 0 {
-		for _, net := range proc.Networks {
-			err = e.client.NetworkConnect(ctx, net.Name, proc.Name, &network.EndpointSettings{
-				Aliases: net.Aliases,
+			_, err := e.client.VolumeCreate(ctx, volume.VolumesCreateBody{
+				Name:   vol.Metadata.UID,
+				Driver: "local",
+				Labels: e.spec.Metadata.Labels,
 			})
 			if err != nil {
 				return err
@@ -111,30 +43,119 @@ func (e *dockerEngine) Create(ctx context.Context, proc *engine.Step) error {
 		}
 	}
 
+	// creates the default pod network. All containers
+	// defined in the pipeline are attached to this network.
+	_, err := e.client.NetworkCreate(ctx, e.spec.Metadata.UID, types.NetworkCreate{
+		Driver: "bridge",
+		Labels: e.spec.Metadata.Labels,
+	})
+
+	return err
+}
+
+func (e *dockerEngine) Create(ctx context.Context, step *engine.Step) error {
+	if step.Docker == nil {
+		return errors.New("engine: missing docker configuration")
+	}
+
+	// parse the docker image name. We need to extract the
+	// image domain name and match to registry credentials
+	// stored in the .docker/config.json object.
+	_, domain, latest, err := parseImage(step.Docker.Image)
+	if err != nil {
+		return err
+	}
+
+	// create pull options with encoded authorization credentials.
+	pullopts := types.ImagePullOptions{}
+	auth, ok := engine.LookupAuth(e.spec, domain)
+	if ok {
+		pullopts.RegistryAuth = authutil.Encode(auth.Username, auth.Password)
+	}
+
+	// automatically pull the latest version of the image if requested
+	// by the process configuration.
+	if step.Docker.PullPolicy == engine.PullAlways ||
+		(step.Docker.PullPolicy == engine.PullDefault && latest) {
+		// TODO(bradrydzewski) implement the PullDefault strategy to pull
+		// the image if the tag is :latest
+		rc, perr := e.client.ImagePull(ctx, step.Docker.Image, pullopts)
+		if perr == nil {
+			io.Copy(ioutil.Discard, rc)
+			rc.Close()
+		}
+		if perr != nil {
+			return perr
+		}
+	}
+
+	_, err = e.client.ContainerCreate(ctx,
+		toConfig(e.spec, step),
+		toHostConfig(e.spec, step),
+		toNetConfig(e.spec, step),
+		step.Metadata.UID,
+	)
+
+	// automatically pull and try to re-create the image if the
+	// failure is caused because the image does not exist.
+	if docker.IsErrImageNotFound(err) && step.Docker.PullPolicy != engine.PullNever {
+		rc, perr := e.client.ImagePull(ctx, step.Docker.Image, pullopts)
+		if perr != nil {
+			return perr
+		}
+		io.Copy(ioutil.Discard, rc)
+		rc.Close()
+
+		// once the image is successfully pulled we attempt to
+		// re-create the container.
+		_, err = e.client.ContainerCreate(ctx,
+			toConfig(e.spec, step),
+			toHostConfig(e.spec, step),
+			toNetConfig(e.spec, step),
+			step.Metadata.UID,
+		)
+	}
+	if err != nil {
+		return err
+	}
+
+	copyOpts := types.CopyToContainerOptions{}
+	copyOpts.AllowOverwriteDirWithFile = false
+	for _, mount := range step.Files {
+		file, ok := engine.LookupFile(e.spec, mount.Name)
+		if !ok {
+			continue
+		}
+		tar := createTarfile(file, mount)
+
+		// TODO(bradrydzewski) this path is probably different on windows.
+		err := e.client.CopyToContainer(ctx, step.Metadata.UID, "/", bytes.NewReader(tar), copyOpts)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func (e *dockerEngine) Start(ctx context.Context, proc *engine.Step) error {
-	startOpts := types.ContainerStartOptions{}
-	return e.client.ContainerStart(ctx, proc.Name, startOpts)
+func (e *dockerEngine) Start(ctx context.Context, step *engine.Step) error {
+	return e.client.ContainerStart(ctx, step.Metadata.UID, types.ContainerStartOptions{})
 }
 
-func (e *dockerEngine) Kill(ctx context.Context, proc *engine.Step) error {
-	return e.client.ContainerKill(ctx, proc.Name, "9")
-}
-
-func (e *dockerEngine) Wait(ctx context.Context, proc *engine.Step) (*engine.State, error) {
-	_, err := e.client.ContainerWait(ctx, proc.Name)
-	if err != nil {
-		// todo
+func (e *dockerEngine) Wait(ctx context.Context, step *engine.Step) (*engine.State, error) {
+	wait, errc := e.client.ContainerWait(ctx, step.Metadata.UID, "")
+	select {
+	case <-wait:
+	case <-errc:
 	}
 
-	info, err := e.client.ContainerInspect(ctx, proc.Name)
+	info, err := e.client.ContainerInspect(ctx, step.Metadata.UID)
 	if err != nil {
 		return nil, err
 	}
 	if info.State.Running {
-		// todo
+		// TODO(bradrydewski) if the state is still running
+		// we should call wait again.
 	}
 
 	return &engine.State{
@@ -144,8 +165,8 @@ func (e *dockerEngine) Wait(ctx context.Context, proc *engine.Step) (*engine.Sta
 	}, nil
 }
 
-func (e *dockerEngine) Tail(ctx context.Context, proc *engine.Step) (io.ReadCloser, error) {
-	logsOpts := types.ContainerLogsOptions{
+func (e *dockerEngine) Tail(ctx context.Context, step *engine.Step) (io.ReadCloser, error) {
+	opts := types.ContainerLogsOptions{
 		Follow:     true,
 		ShowStdout: true,
 		ShowStderr: true,
@@ -153,7 +174,7 @@ func (e *dockerEngine) Tail(ctx context.Context, proc *engine.Step) (io.ReadClos
 		Timestamps: false,
 	}
 
-	logs, err := e.client.ContainerLogs(ctx, proc.Name, logsOpts)
+	logs, err := e.client.ContainerLogs(ctx, step.Metadata.UID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -168,42 +189,55 @@ func (e *dockerEngine) Tail(ctx context.Context, proc *engine.Step) (io.ReadClos
 	return rc, nil
 }
 
-func (e *dockerEngine) Upload(ctx context.Context, proc *engine.Step, path string, r io.Reader) error {
-	options := types.CopyToContainerOptions{}
-	options.AllowOverwriteDirWithFile = false
-	return e.client.CopyToContainer(ctx, proc.Name, path, r, options)
-}
-
-func (e *dockerEngine) Download(ctx context.Context, proc *engine.Step, path string) (io.ReadCloser, *engine.FileInfo, error) {
-	rc, stat, err := e.client.CopyFromContainer(ctx, proc.Name, path)
-	info := &engine.FileInfo{
-		Path:  path,
-		Name:  stat.Name,
-		Time:  stat.Mtime.Unix(),
-		Size:  stat.Size,
-		IsDir: stat.Mode.IsDir(),
-	}
-	return rc, info, err
-}
-
-func (e *dockerEngine) Destroy(ctx context.Context, conf *engine.Config) error {
+func (e *dockerEngine) Destroy(ctx context.Context) error {
 	removeOpts := types.ContainerRemoveOptions{
-		RemoveVolumes: true,
+		Force:         true,
 		RemoveLinks:   false,
-		Force:         false,
+		RemoveVolumes: true,
 	}
 
-	for _, stage := range conf.Stages {
-		for _, step := range stage.Steps {
-			e.client.ContainerKill(ctx, step.Name, "9")
-			e.client.ContainerRemove(ctx, step.Name, removeOpts)
+	// cleanup all containers
+	for _, step := range e.spec.Steps {
+		e.client.ContainerKill(ctx, step.Metadata.UID, "9")
+		e.client.ContainerRemove(ctx, step.Metadata.UID, removeOpts)
+	}
+
+	// cleanup all volumes
+	if e.spec.Docker != nil {
+		for _, vol := range e.spec.Docker.Volumes {
+			if vol.EmptyDir == nil {
+				continue
+			}
+			err := e.client.VolumeRemove(ctx, vol.Metadata.UID, true)
+			if err != nil {
+				return err
+			}
 		}
 	}
-	for _, volume := range conf.Volumes {
-		e.client.VolumeRemove(ctx, volume.Name, true)
+
+	// cleanup the network
+	return e.client.NetworkRemove(ctx, e.spec.Metadata.UID)
+}
+
+// helper function parses the image and returns the
+// canonical image name, domain name, and whether or not
+// the image tag is :latest.
+func parseImage(s string) (canonical, domain string, latest bool, err error) {
+	// parse the docker image name. We need to extract the
+	// image domain name and match to registry credentials
+	// stored in the .docker/config.json object.
+	named, err := reference.ParseNormalizedNamed(s)
+	if err != nil {
+		return
 	}
-	for _, network := range conf.Networks {
-		e.client.NetworkRemove(ctx, network.Name)
-	}
-	return nil
+	// the canonical image name, for some reason, excludes
+	// the tag name. So we need to make sure it is included
+	// in the image name so we can determine if the :latest
+	// tag is specified
+	named = reference.TagNameOnly(named)
+
+	return named.String(),
+		reference.Domain(named),
+		strings.HasSuffix(named.String(), ":latest"),
+		nil
 }

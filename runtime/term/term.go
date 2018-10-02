@@ -29,7 +29,7 @@ type WriteLineFunc func(*runtime.State, *runtime.Line) error
 // WriteLine writes log lines to io.Writer w in plain text format.
 func WriteLine(w io.Writer) WriteLineFunc {
 	return func(state *runtime.State, line *runtime.Line) error {
-		fmt.Fprintf(w, linePlain, state.Step.Alias, line.Number, line.Message)
+		fmt.Fprintf(w, linePlain, state.Step.Metadata.Name, line.Number, line.Message)
 		return nil
 	}
 }
@@ -43,17 +43,17 @@ func WriteLinePretty(w io.Writer) WriteLineFunc {
 
 	return func(state *runtime.State, line *runtime.Line) error {
 		mutex.Lock()
-		color, ok := steps[state.Step.Name]
+		color, ok := steps[state.Step.Metadata.Name]
 		mutex.Unlock()
 
 		if !ok {
 			color = colors[len(steps)%len(colors)]
 			mutex.Lock()
-			steps[state.Step.Name] = color
+			steps[state.Step.Metadata.Name] = color
 			mutex.Unlock()
 		}
 
-		fmt.Fprintf(w, linePretty, color, state.Step.Alias, line.Number, line.Message)
+		fmt.Fprintf(w, linePretty, color, state.Step.Metadata.Name, line.Number, line.Message)
 		return nil
 	}
 }

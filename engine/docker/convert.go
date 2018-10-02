@@ -1,145 +1,173 @@
 package docker
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 	"github.com/drone/drone-runtime/engine"
+
+	"docker.io/go-docker/api/types/container"
+	"docker.io/go-docker/api/types/mount"
+	"docker.io/go-docker/api/types/network"
 )
 
 // returns a container configuration.
-func toConfig(proc *engine.Step) *container.Config {
+func toConfig(spec *engine.Spec, step *engine.Step) *container.Config {
 	config := &container.Config{
-		Image:        proc.Image,
-		Labels:       proc.Labels,
-		WorkingDir:   proc.WorkingDir,
+		Image:        step.Docker.Image,
+		Labels:       step.Metadata.Labels,
+		WorkingDir:   step.WorkingDir,
+		AttachStdin:  false,
 		AttachStdout: true,
 		AttachStderr: true,
+		Tty:          false,
+		OpenStdin:    false,
+		StdinOnce:    false,
+		ArgsEscaped:  false,
 	}
 
-	if len(proc.Environment) != 0 {
-		config.Env = toEnv(proc.Environment)
+	if len(step.Envs) != 0 {
+		config.Env = toEnv(step.Envs)
 	}
-	for _, secret := range proc.Secrets {
-		config.Env = append(config.Env, secret.Name+"="+secret.Value)
+	for _, name := range step.Secrets {
+		secret, ok := engine.LookupSecret(spec, name)
+		if ok {
+			config.Env = append(config.Env, secret.Name+"="+secret.Data)
+		}
 	}
-	if len(proc.Command) != 0 {
-		config.Cmd = proc.Command
+	if len(step.Docker.Args) != 0 {
+		config.Cmd = step.Docker.Args
 	}
-	if len(proc.Entrypoint) != 0 {
-		config.Entrypoint = proc.Entrypoint
+	if len(step.Docker.Command) != 0 {
+		config.Entrypoint = step.Docker.Command
 	}
-	if len(proc.Volumes) != 0 {
-		config.Volumes = toVolumeSet(proc.Volumes)
-	}
-	if len(proc.Commands) != 0 {
-		// TODO(bradrydzewski) currently the commands are converted
-		// to a shell script by the yaml compiler. How the script is
-		// generated and passed to the container may be runtime-specific.
-		// so need to decide where this belongs.
+	if len(step.Volumes) != 0 {
+		config.Volumes = toVolumeSet(spec, step)
 	}
 	return config
 }
 
+// TODO: add dns
+// TODO: add dns_search
+// TODO: add extra_hosts
+// TODO: add shmsize
+// TODO: add tmpfs
+// TODO: add devices
+// TODO: set resource limits
+// TODO: set port bindings
 // returns a container host configuration.
-func toHostConfig(proc *engine.Step) *container.HostConfig {
+func toHostConfig(spec *engine.Spec, proc *engine.Step) *container.HostConfig {
 	config := &container.HostConfig{
-		Resources: container.Resources{
-			CPUQuota:   proc.CPUQuota,
-			CPUShares:  proc.CPUShares,
-			CpusetCpus: proc.CPUSet,
-			Memory:     proc.MemLimit,
-			MemorySwap: proc.MemSwapLimit,
-		},
+		// TODO: map resources to proc.Resources.Limits
+		// Resources: container.Resources{},
 		LogConfig: container.LogConfig{
 			Type: "json-file",
 		},
-		Privileged: proc.Privileged,
-		ShmSize:    proc.ShmSize,
-		Sysctls:    proc.Sysctls,
+		Privileged: proc.Docker.Privileged,
+		// TODO: set shmsize for docker-based (e.g. non-kubernetes) installs
+		// ShmSize: 0,
 	}
 
-	// if len(proc.VolumesFrom) != 0 {
-	// 	config.VolumesFrom = proc.VolumesFrom
-	// }
-	if len(proc.NetworkMode) != 0 {
-		config.NetworkMode = container.NetworkMode(proc.NetworkMode)
-	}
-	if len(proc.IpcMode) != 0 {
-		config.IpcMode = container.IpcMode(proc.IpcMode)
-	}
-	if len(proc.DNS) != 0 {
-		config.DNS = proc.DNS
-	}
-	if len(proc.DNSSearch) != 0 {
-		config.DNSSearch = proc.DNSSearch
-	}
-	if len(proc.ExtraHosts) != 0 {
-		config.ExtraHosts = proc.ExtraHosts
-	}
+	// TODO: set DNS and host settings for docker-based (e.g. non-kubernetes) installs
+	// config.DNS
+	// config.DNSSearch
+	// config.ExtraHosts
+
 	if len(proc.Devices) != 0 {
-		config.Devices = toDevices(proc.Devices)
+		// 	config.Devices = toDevices(proc.Devices)
 	}
 	if len(proc.Volumes) != 0 {
-		config.Binds = toVolumeSlice(proc.Volumes)
+		config.Binds = toVolumeSlice(spec, proc)
+		config.Mounts = toVolumeMounts(spec, proc)
 	}
-	config.Tmpfs = map[string]string{}
-	for _, path := range proc.Tmpfs {
-		if strings.Index(path, ":") == -1 {
-			config.Tmpfs[path] = ""
-			continue
-		}
-		parts := strings.Split(path, ":")
-		config.Tmpfs[parts[0]] = parts[1]
-	}
-	for _, volume := range proc.Volumes {
-		if !strings.HasPrefix(volume.Source, `\\.\pipe\`) {
-			continue
-		}
-		config.Mounts = append(config.Mounts, mount.Mount{
-			Source: volume.Source,
-			Target: volume.Target,
-			Type:   "npipe",
-		})
-	}
-	// if proc.OomKillDisable {
-	// 	config.OomKillDisable = &proc.OomKillDisable
+	// config.Tmpfs = map[string]string{}
+	// for _, path := range proc.Tmpfs {
+	// 	if strings.Index(path, ":") == -1 {
+	// 		config.Tmpfs[path] = ""
+	// 		continue
+	// 	}
+	// 	parts := strings.Split(path, ":")
+	// 	config.Tmpfs[parts[0]] = parts[1]
 	// }
 
 	return config
+}
+
+func toNetConfig(spec *engine.Spec, proc *engine.Step) *network.NetworkingConfig {
+	endpoints := map[string]*network.EndpointSettings{}
+	endpoints[spec.Metadata.UID] = &network.EndpointSettings{
+		NetworkID: spec.Metadata.UID,
+		Aliases:   []string{proc.Metadata.Name},
+	}
+	return &network.NetworkingConfig{
+		EndpointsConfig: endpoints,
+	}
 }
 
 // helper function that converts a slice of volume paths to a set of
 // unique volume names.
-func toVolumeSet(from []*engine.VolumeMapping) map[string]struct{} {
+func toVolumeSet(spec *engine.Spec, step *engine.Step) map[string]struct{} {
 	to := map[string]struct{}{}
-	for _, v := range from {
-		if strings.HasPrefix(v.Source, `\\.\pipe\`) {
+	for _, mount := range step.Volumes {
+		volume, ok := engine.LookupVolume(spec, mount.Name)
+		if !ok {
 			continue
 		}
-		to[v.Target] = struct{}{}
+		if volume.HostPath != nil {
+			if strings.HasPrefix(volume.HostPath.Path, `\\.\pipe\`) {
+				continue
+			}
+		}
+		to[mount.Path] = struct{}{}
 	}
 	return to
 }
 
-func toVolumeSlice(from []*engine.VolumeMapping) []string {
+func toVolumeSlice(spec *engine.Spec, step *engine.Step) []string {
 	var to []string
-	for _, v := range from {
-		if strings.HasPrefix(v.Source, `\\.\pipe\`) {
+	for _, mount := range step.Volumes {
+		volume, ok := engine.LookupVolume(spec, mount.Name)
+		if !ok {
 			continue
 		}
+		if volume.HostPath != nil {
+			if strings.HasPrefix(volume.HostPath.Path, `\\.\pipe\`) {
+				continue
+			}
+		}
 		var path string
-		if v.Name != "" {
-			path = v.Name + ":" + v.Target
+		if volume.HostPath != nil {
+			path = volume.HostPath.Path + ":" + mount.Path
 		} else {
-			path = v.Source + ":" + v.Target
+			path = volume.Metadata.UID + ":" + mount.Path
 		}
 		to = append(to, path)
 	}
 	return to
+}
+
+func toVolumeMounts(spec *engine.Spec, step *engine.Step) []mount.Mount {
+	var mounts []mount.Mount
+	for _, target := range step.Volumes {
+		source, ok := engine.LookupVolume(spec, target.Name)
+		if !ok {
+			continue
+		}
+		if source.HostPath == nil {
+			continue
+		}
+		if strings.HasPrefix(source.HostPath.Path, `\\.\pipe\`) == false {
+			continue
+		}
+		mounts = append(mounts, mount.Mount{
+			Source: source.HostPath.Path,
+			Target: target.Path,
+			Type:   "npipe",
+		})
+	}
+	if len(mounts) == 0 {
+		return nil
+	}
+	return mounts
 }
 
 // helper function that converts a key value map of environment variables to a
@@ -152,23 +180,16 @@ func toEnv(env map[string]string) []string {
 	return envs
 }
 
-// helper function that converts a slice of device paths to a slice of
-// container.DeviceMapping.
-func toDevices(from []*engine.DeviceMapping) []container.DeviceMapping {
-	var to []container.DeviceMapping
-	for _, device := range from {
-		to = append(to, container.DeviceMapping{
-			PathOnHost:        device.Source,
-			PathInContainer:   device.Target,
-			CgroupPermissions: "rwm",
-		})
-	}
-	return to
-}
-
-// helper function that serializes the auth configuration as JSON
-// base64 payload.
-func encodeAuthToBase64(authConfig engine.Auth) string {
-	buf, _ := json.Marshal(authConfig)
-	return base64.URLEncoding.EncodeToString(buf)
-}
+// // helper function that converts a slice of device paths to a slice of
+// // container.DeviceMapping.
+// func toDevices(from []*engine.DeviceMapping) []container.DeviceMapping {
+// 	var to []container.DeviceMapping
+// 	for _, device := range from {
+// 		to = append(to, container.DeviceMapping{
+// 			PathOnHost:        device.Source,
+// 			PathInContainer:   device.Target,
+// 			CgroupPermissions: "rwm",
+// 		})
+// 	}
+// 	return to
+// }

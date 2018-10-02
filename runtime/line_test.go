@@ -17,8 +17,9 @@ func TestLineWriter(t *testing.T) {
 	}
 	state.hook = hook
 	state.Step = &engine.Step{}
-	state.Step.Secrets = []*engine.Secret{
-		{Name: "foo", Value: "bar", Mask: true},
+	state.config = &engine.Spec{}
+	state.config.Secrets = []*engine.Secret{
+		{Name: "foo", Data: "bar"},
 	}
 
 	newWriter(state).Write([]byte("foobar"))
@@ -36,7 +37,7 @@ func TestLineWriter(t *testing.T) {
 
 func TestLineReplacer(t *testing.T) {
 	secrets := []*engine.Secret{
-		{Name: "foo", Value: "bar", Mask: true},
+		{Name: "foo", Data: "bar"},
 	}
 	replacer := newReplacer(secrets)
 	if replacer == nil {
@@ -50,7 +51,7 @@ func TestLineReplacer(t *testing.T) {
 	// or contains no masked secrets.
 
 	secrets = []*engine.Secret{
-		{Name: "foo", Value: "bar", Mask: false},
+		{Name: "foo", Data: "bar"},
 	}
 	replacer = newReplacer(secrets)
 	if replacer != nil {

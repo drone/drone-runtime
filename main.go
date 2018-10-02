@@ -12,35 +12,27 @@ import (
 
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker"
+	"github.com/drone/drone-runtime/engine/docker/authutil"
 	"github.com/drone/drone-runtime/engine/plugin"
 	"github.com/drone/drone-runtime/runtime"
-	"github.com/drone/drone-runtime/runtime/chroot"
 	"github.com/drone/drone-runtime/runtime/term"
-	"github.com/drone/drone-runtime/version"
 	"github.com/drone/signal"
 )
 
 var tty = isatty.IsTerminal(os.Stdout.Fd())
 
 func main() {
-	b := flag.String("chroot", "", "")
+	c := flag.String("config", "", "")
 	p := flag.String("plugin", "", "")
 	t := flag.Duration("timeout", time.Hour, "")
-	v := flag.Bool("version", false, "")
 	h := flag.Bool("help", false, "")
 
 	flag.BoolVar(h, "h", false, "")
-	flag.BoolVar(v, "v", false, "")
 	flag.Usage = usage
 	flag.Parse()
 
 	if *h {
 		flag.Usage()
-		os.Exit(0)
-	}
-
-	if *v {
-		fmt.Println(version.Version)
 		os.Exit(0)
 	}
 
@@ -54,14 +46,22 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	var engine engine.Engine
+	if *c != "" {
+		auths, err := authutil.ParseFile(*c)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		config.Docker.Auths = append(config.Docker.Auths, auths...)
+	}
+
+	var factory engine.Factory
 	if *p == "" {
-		engine, err = docker.NewEnv()
+		factory, err = docker.NewEnv()
 		if err != nil {
 			log.Fatalln(err)
 		}
 	} else {
-		engine, err = plugin.Open(*p)
+		factory, err = plugin.Open(*p)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -73,16 +73,8 @@ func main() {
 		hooks.GotLine = term.WriteLinePretty(os.Stdout)
 	}
 
-	var fs runtime.FileSystem
-	if *b != "" {
-		fs, err = chroot.New(*b)
-		if err != nil {
-			log.Fatalln(err)
-		}
-	}
-
+	engine := factory.Create(config)
 	r := runtime.New(
-		runtime.WithFileSystem(fs),
 		runtime.WithEngine(engine),
 		runtime.WithConfig(config),
 		runtime.WithHooks(hooks),
@@ -100,8 +92,8 @@ func main() {
 
 func usage() {
 	fmt.Println(`Usage: drone-runtime [OPTION]... [SOURCE]
+	  --config    loads a docker config.json file
       --plugin    loads a runtime engine from a .so file
       --timeout   sets an execution timeout
-  -v, --version   display the version exit
   -h, --help      display this help and exit`)
 }

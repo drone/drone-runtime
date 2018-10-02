@@ -5,9 +5,8 @@ import "github.com/drone/drone-runtime/engine"
 // State defines the pipeline and process state.
 type State struct {
 	hook   *Hook
-	config *engine.Config
+	config *engine.Spec
 	engine engine.Engine
-	fs     FileSystem
 
 	// Global state of the runtime.
 	Runtime struct {
@@ -33,6 +32,5 @@ func snapshot(r *Runtime, step *engine.Step, state *engine.State) *State {
 	s.engine = r.engine
 	s.Step = step
 	s.State = state
-	s.fs = r.fs
 	return s
 }

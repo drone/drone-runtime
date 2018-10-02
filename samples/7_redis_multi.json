@@ -1,0 +1,49 @@
+{
+	"metadata": {
+		"uid": "uid_Rsd12QpHu5zInGVL",
+		"namespace": "ns_vshOGHFAAhv32ETm",
+		"name": "redis_multi_test"
+	},
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_RTh2dwjZUOvz1KIn",
+				"namespace": "ns_vshOGHFAAhv32ETm",
+				"name": "redis_1"
+			},
+			"detach": true,
+			"docker": {
+				"image": "redis:4-alpine"
+			}
+		},
+		{
+			"metadata": {
+				"uid": "uid_GMQ61mzQ1zSTSwVj",
+				"namespace": "ns_vshOGHFAAhv32ETm",
+				"name": "redis_2"
+			},
+			"detach": true,
+			"docker": {
+				"image": "redis:4-alpine"
+			}
+		},
+		{
+			"metadata": {
+				"uid": "uid_bkAb4hbBJF0vC5bM",
+				"namespace": "ns_vshOGHFAAhv32ETm",
+				"name": "ping"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -x; set -e; sleep 5; redis-cli -h redis_1 ping; redis-cli -h redis_2 ping; redis-cli -h redis_1 set HELLO hello; redis-cli -h redis_2 set HELLO hola; redis-cli -h redis_1 get HELLO; redis-cli -h redis_2 get HELLO"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "redis:4-alpine"
+			}
+		}
+	],
+	"docker": {}
+}

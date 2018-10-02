@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/drone/autoscaler/mocks"
 	"github.com/drone/drone-runtime/engine"
-	"github.com/drone/drone-runtime/engine/mocks"
 	"github.com/golang/mock/gomock"
 )
 
@@ -17,8 +17,8 @@ func TestRun(t *testing.T) {
 	c := gomock.NewController(t)
 	defer c.Finish()
 
-	conf := &engine.Config{
-		Stages: []*engine.Stage{
+	conf := &engine.Spec{
+		Steps: []*engine.Stage{
 			{
 				Name: "stage_0",
 				Steps: []*engine.Step{

@@ -1,125 +1,144 @@
 package engine
 
 type (
-	// Config defines the runtime configuration.
-	Config struct {
-		Version  int64      `json:"version"`
-		Stages   []*Stage   `json:"pipeline"` // pipeline stages
-		Networks []*Network `json:"networks"` // network definitions
-		Volumes  []*Volume  `json:"volumes"`  // volume definitions
+	// Metadata provides execution metadata.
+	Metadata struct {
+		UID       string            `json:"uid"`
+		Namespace string            `json:"namespace"`
+		Name      string            `json:"name"`
+		Labels    map[string]string `json:"labels"`
 	}
 
-	// Stage denotes a collection of one or more steps.
-	Stage struct {
-		Name  string  `json:"name,omitempty"`
-		Alias string  `json:"alias,omitempty"`
-		Steps []*Step `json:"steps,omitempty"`
+	// Spec provides the pipeline spec. This provides the
+	// required instructions for reproducable pipeline
+	// execution.
+	Spec struct {
+		Metadata Metadata  `json:"metadata"`
+		Secrets  []*Secret `json:"secrets"`
+		Steps    []*Step   `json:"steps"`
+		Files    []*File   `json:"files"`
+
+		// Docker-specific settings. These settings are
+		// only used by the Docker and Kubernetes runtime
+		// drivers.
+		Docker *DockerConfig `json:"docker,omitempty"`
+
+		// Qemu-specific settings. These settings are only
+		// used by the qemu runtime driver.
+		Qemu *QemuConfig `json:"qemu,omitempty"`
+
+		// VMWare Fusion settings. These settings are only
+		// used by the VMWare runtime driver.
+		Fusion *FusionConfig `json:"fusion,omitempty"`
 	}
 
-	// Step defines a container process.
+	// Step defines a pipeline step.
 	Step struct {
-		ID           int64             `json:"id"`
-		Name         string            `json:"name"`
-		Alias        string            `json:"alias,omitempty"`
-		Image        string            `json:"image,omitempty"`
-		Pull         bool              `json:"pull,omitempty"`
-		Detached     bool              `json:"detach,omitempty"`
-		Privileged   bool              `json:"privileged,omitempty"`
-		WorkingDir   string            `json:"working_dir,omitempty"`
-		Secrets      []*Secret         `json:"secrets,omitempty"`
-		Environment  map[string]string `json:"environment,omitempty"`
-		Labels       map[string]string `json:"labels,omitempty"`
-		Entrypoint   []string          `json:"entrypoint,omitempty"`
-		Command      []string          `json:"command,omitempty"`
-		Commands     []string          `json:"commands,omitempty"`
-		ExtraHosts   []string          `json:"extra_hosts,omitempty"`
-		Volumes      []*VolumeMapping  `json:"volumes,omitempty"`
-		Tmpfs        []string          `json:"tmpfs,omitempty"`
-		Devices      []*DeviceMapping  `json:"devices,omitempty"`
-		Networks     []*NetworkMapping `json:"networks,omitempty"`
-		DNS          []string          `json:"dns,omitempty"`
-		DNSSearch    []string          `json:"dns_search,omitempty"`
-		MemSwapLimit int64             `json:"memswap_limit,omitempty"`
-		MemLimit     int64             `json:"mem_limit,omitempty"`
-		ShmSize      int64             `json:"shm_size,omitempty"`
-		CPUQuota     int64             `json:"cpu_quota,omitempty"`
-		CPUShares    int64             `json:"cpu_shares,omitempty"`
-		CPUSet       string            `json:"cpu_set,omitempty"`
-		ErrIgnore    bool              `json:"err_ignore,omitempty"`
-		OnFailure    bool              `json:"on_failure,omitempty"`
-		OnSuccess    bool              `json:"on_success,omitempty"`
-		AuthConfig   Auth              `json:"auth_config,omitempty"`
-		NetworkMode  string            `json:"network_mode,omitempty"`
-		IpcMode      string            `json:"ipc_mode,omitempty"`
-		Exports      []*File           `json:"exports,omitempty"`
-		Sysctls      map[string]string `json:"sysctls,omitempty"`
-		Backup       []*Snapshot       `json:"backup,omitempty"`
-		Restore      []*Snapshot       `json:"restore,omitempty"`
+		Metadata     Metadata          `json:"metadata"`
+		Detach       bool              `json:"detach"`
+		DependsOn    []string          `json:"depends_on"`
+		Devices      []*VolumeDevice   `json:"devices"`
+		Docker       *DockerStep       `json:"docker"`
+		Envs         map[string]string `json:"environment"`
+		Files        []*FileMount      `json:"files"`
+		IgnoreErr    bool              `json:"ignore_err"`
+		IgnoreStdout bool              `json:"ignore_stderr"`
+		IgnoreStderr bool              `json:"ignore_stdout"`
+		Resources    *Resources        `json:"resources"`
+		RunPolicy    RunPolicy         `json:"run_policy"`
+		Secrets      []string          `json:"secrets"`
+		Volumes      []*VolumeMount    `json:"volumes"`
+		WorkingDir   string            `json:"working_dir"`
 	}
 
-	// Auth defines registry authentication credentials.
-	Auth struct {
-		Username string `json:"username,omitempty"`
-		Password string `json:"password,omitempty"`
-		Email    string `json:"email,omitempty"`
+	// DockerAuth defines dockerhub authentication credentials.
+	DockerAuth struct {
+		Address  string `json:"address"`
+		Username string `json:"username"`
+		Password string `json:"password"`
 	}
 
-	// NetworkMapping defines a container network mapping.
-	NetworkMapping struct {
-		Name    string   `json:"name"`
-		Aliases []string `json:"aliases"`
-		Ports   []int    `json:"ports"`
+	// DockerConfig configures a Docker-based pipeline.
+	DockerConfig struct {
+		Auths   []*DockerAuth `json:"auths"`
+		Volumes []*Volume     `json:"volumes"`
 	}
 
-	// Network defines a container network.
-	Network struct {
-		Name       string            `json:"name,omitempty"`
-		Driver     string            `json:"driver,omitempty"`
-		DriverOpts map[string]string `json:"driver_opts,omitempty"`
+	// DockerStep configures a docker step.
+	DockerStep struct {
+		Args       []string   `json:"args"`
+		Command    []string   `json:"command"`
+		Image      string     `json:"image"`
+		Networks   []string   `json:"networks"`
+		Ports      []*Port    `json:"ports"`
+		Privileged bool       `json:"privileged"`
+		PullPolicy PullPolicy `json:"pull_policy"`
 	}
 
-	// Volume defines a container volume.
-	Volume struct {
-		Name       string            `json:"name,omitempty"`
-		Driver     string            `json:"driver,omitempty"`
-		DriverOpts map[string]string `json:"driver_opts,omitempty"`
-	}
-
-	// VolumeMapping describes a volume mapping.
-	VolumeMapping struct {
-		Name   string `json:"name"`
-		Source string `json:"source"`
-		Target string `json:"target"`
-	}
-
-	// DeviceMapping describes a device mapping.
-	DeviceMapping struct {
-		Source string `json:"source"`
-		Target string `json:"target"`
-	}
-
-	// Secret defines a runtime secret
-	Secret struct {
-		Name  string `json:"name,omitempty"`  // Secret name
-		Value string `json:"value,omitempty"` // Secret value
-		Mount string `json:"mount,omitempty"` // Secrets are mounted as a file
-		Mask  bool   `json:"mask,omitempty"`  // Secrets are masked in output
-	}
-
-	// File defines a file exported from the container.
+	// File defines a file that should be uploaded or
+	// mounted somewhere in the step container or virtual
+	// machine prior to command execution.
 	File struct {
-		Path string `json:"path,omitempty"` // File path
-		Mime string `json:"mime,omitempty"` // File mime type
+		Name string
+		Data []byte
 	}
 
-	// FileInfo defines a file stat
-	FileInfo struct {
-		Name  string // File path
-		Path  string // File path
-		Size  int64  // File size
-		Time  int64  // File time
-		Mime  string // File mime type
-		IsDir bool   // File is directory
+	// FileMount defines how a file resource should be
+	// mounted or included in the runtime environment.
+	FileMount struct {
+		Name string `json:"name"`
+		Path string `json:"path"`
+		Mode int64  `json:"mode"`
+	}
+
+	// FusionConfig configures a VMWare Fusion-based pipeline.
+	FusionConfig struct {
+		Image string `json:"image"`
+	}
+
+	// Platform defines the target platform.
+	Platform struct {
+		OS      string `json:"os"`
+		Arch    string `json:"arch"`
+		Variant string `json:"variant"`
+		Version string `json:"version"`
+	}
+
+	// Port represents a network port in a single container.
+	Port struct {
+		Port     int    `json:"port"`
+		Host     int    `json:"host"`
+		Protocol string `json:"protocol"`
+	}
+
+	// QemuConfig configures a Qemu-based pipeline.
+	QemuConfig struct {
+		Image string `json:"image"`
+	}
+
+	// Resources describes the compute resource
+	// requirements.
+	Resources struct {
+		// Limits describes the maximum amount of compute
+		// resources allowed.
+		Limits *ResourceObject `json:"limits"`
+
+		// Requests describes the minimum amount of
+		// compute resources required.
+		Requests *ResourceObject `json:"requests"`
+	}
+
+	// ResourceObject describes compute resource
+	// requirements.
+	ResourceObject struct {
+		CPU    int64 `json:"cpu"`
+		Memory int64 `json:"memory"`
+	}
+
+	// Secret represents a secret variable.
+	Secret struct {
+		Name string `json:"name"`
+		Data string `json:"data"`
 	}
 
 	// State represents the container state.
@@ -129,10 +148,38 @@ type (
 		OOMKilled bool // Container is oom killed
 	}
 
-	// Snapshot defines a container volume snapshot
-	Snapshot struct {
-		Data   []byte `json:"data,omitempty"`
-		Source string `json:"source,omitempty"`
-		Target string `json:"target,omitempty"`
+	// Volume that can be mounted by containers.
+	Volume struct {
+		Metadata Metadata        `json:"metadata"`
+		EmptyDir *VolumeEmptyDir `json:"temp"`
+		HostPath *VolumeHostPath `json:"host"`
+	}
+
+	// VolumeDevice describes a mapping of a raw block
+	// device within a container.
+	VolumeDevice struct {
+		Name       string `json:"name"`
+		DevicePath string `json:"path"`
+	}
+
+	// VolumeMount describes a mounting of a Volume
+	// within a container.
+	VolumeMount struct {
+		Name string `json:"name"`
+		Path string `json:"path"`
+	}
+
+	// VolumeEmptyDir mounts a temporary directory from the
+	// host node's filesystem into the container. This can
+	// be used as a shared scratch space.
+	VolumeEmptyDir struct {
+		Medium    string `json:"medium"`
+		SizeLimit int64  `json:"size_limit"`
+	}
+
+	// VolumeHostPath mounts a file or directory from the
+	// host node's filesystem into your container.
+	VolumeHostPath struct {
+		Path string `json:"path"`
 	}
 )

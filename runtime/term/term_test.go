@@ -11,7 +11,7 @@ import (
 func TestWriteLine(t *testing.T) {
 	var (
 		buf   bytes.Buffer
-		step  = &engine.Step{Alias: "test"}
+		step  = &engine.Step{Metadata: engine.Metadata{Name: "test"}}
 		line  = &runtime.Line{Number: 1, Message: "hello"}
 		state = &runtime.State{Step: step}
 	)
@@ -26,7 +26,7 @@ func TestWriteLine(t *testing.T) {
 func TestWriteLinePretty(t *testing.T) {
 	var (
 		buf   bytes.Buffer
-		step  = &engine.Step{Alias: "test"}
+		step  = &engine.Step{Metadata: engine.Metadata{Name: "test"}}
 		line  = &runtime.Line{Number: 1, Message: "hello"}
 		state = &runtime.State{Step: step}
 	)

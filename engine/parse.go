@@ -8,8 +8,8 @@ import (
 )
 
 // Parse parses the pipeline config from an io.Reader.
-func Parse(r io.Reader) (*Config, error) {
-	cfg := Config{}
+func Parse(r io.Reader) (*Spec, error) {
+	cfg := Spec{}
 	err := json.NewDecoder(r).Decode(&cfg)
 	if err != nil {
 		return nil, err
@@ -18,7 +18,7 @@ func Parse(r io.Reader) (*Config, error) {
 }
 
 // ParseFile parses the pipeline config from a file.
-func ParseFile(path string) (*Config, error) {
+func ParseFile(path string) (*Spec, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func ParseFile(path string) (*Config, error) {
 }
 
 // ParseString parses the pipeline config from a string.
-func ParseString(s string) (*Config, error) {
+func ParseString(s string) (*Spec, error) {
 	return Parse(
 		strings.NewReader(s),
 	)

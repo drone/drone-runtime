@@ -1,48 +1,46 @@
 {
-	"version": 1,
-	"pipeline": [
+	"metadata": {
+		"uid": "uid_eY3eTAq6fdaARDRi",
+		"namespace": "ns_C72TOXpVkqoAmojM",
+		"name": "test_on_failure"
+	},
+	"steps": [
 		{
-			"name": "stage_0",
-			"alias": "stage_0",
-			"steps": [
-				{
-					"name": "step_0",
-					"alias": "step_0",
-					"image": "alpine:3.6",
-					"working_dir": "/",
-					"entrypoint": [
-						"/bin/sh",
-						"-c"
-					],
-					"command": [
-						"set -e; set -x; echo this step will fail the pipeline; exit 1"
-					],
-					"on_success": true
-				}
-			]
+			"metadata": {
+				"uid": "uid_ObSCalCTDCTASaXG",
+				"namespace": "ns_C72TOXpVkqoAmojM",
+				"name": "step_0"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -e; set -x; echo this step will exit the pipeline; exit 1"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "alpine:3.6"
+			},
+			"run_policy": "on-success"
 		},
 		{
-			"name": "stage_1",
-			"alias": "stage_1",
-			"steps": [
-				{
-					"name": "step_1",
-					"alias": "step_1",
-					"image": "alpine:3.6",
-					"working_dir": "/",
-					"entrypoint": [
-						"/bin/sh",
-						"-c"
-					],
-					"command": [
-						"set -e; set -x; echo this step must execute on failure"
-					],
-					"on_success": true,
-					"on_failure": true
-				}
-			]
+			"metadata": {
+				"uid": "uid_2stvc2NEzyB2rqLf",
+				"namespace": "ns_C72TOXpVkqoAmojM",
+				"name": "step_1"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -e; set -x; echo this step must execute on failure"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "alpine:3.6"
+			},
+			"run_policy": "on-failure"
 		}
 	],
-	"networks": [ ],
-	"volumes": [ ]
+	"docker": {}
 }

@@ -21,6 +21,10 @@
 #  version = "2.4.0"
 
 [[constraint]]
+  name = "github.com/docker/distribution"
+  revision = "edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c"
+
+[[constraint]]
   name = "github.com/vincent-petithory/dataurl"
   branch = "master"
 
@@ -31,10 +35,6 @@
 [[constraint]]
   name = "github.com/coreos/go-semver"
   version = "0.2.0"
-
-[[constraint]]
-  name = "github.com/docker/docker"
-  version = "1.13.1"
 
 [[constraint]]
   branch = "master"

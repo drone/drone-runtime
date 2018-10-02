@@ -1,2 +1,4 @@
 vendor
 *.out
+*.txt
+.docker/config.json
