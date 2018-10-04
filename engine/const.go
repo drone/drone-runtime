@@ -68,6 +68,7 @@ const (
 	RunOnSuccess RunPolicy = iota
 	RunOnFailure
 	RunAlways
+	RunNever
 )
 
 func (r RunPolicy) String() string {
@@ -78,6 +79,7 @@ var runPolicyID = map[RunPolicy]string{
 	RunOnSuccess: "on-success",
 	RunOnFailure: "on-failure",
 	RunAlways:    "always",
+	RunNever:     "never",
 }
 
 var runPolicyName = map[string]RunPolicy{
@@ -85,6 +87,7 @@ var runPolicyName = map[string]RunPolicy{
 	"on-success": RunOnSuccess,
 	"on-failure": RunOnFailure,
 	"always":     RunAlways,
+	"never":      RunNever,
 }
 
 // MarshalJSON marshals the string representation of the

@@ -27,6 +27,10 @@ func TestRunPolicy_Marshal(t *testing.T) {
 			policy: RunOnSuccess,
 			data:   `"on-success"`,
 		},
+		{
+			policy: RunNever,
+			data:   `"never"`,
+		},
 	}
 	for _, test := range tests {
 		data, err := json.Marshal(&test.policy)
@@ -56,6 +60,10 @@ func TestRunPolicy_Unmarshal(t *testing.T) {
 		{
 			policy: RunOnSuccess,
 			data:   `"on-success"`,
+		},
+		{
+			policy: RunNever,
+			data:   `"never"`,
 		},
 		{
 			// no policy should default to on-success

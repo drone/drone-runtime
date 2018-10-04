@@ -104,6 +104,8 @@ func (r *Runtime) exec(step *engine.Step) error {
 	ctx := context.Background()
 
 	switch {
+	case step.RunPolicy == engine.RunNever:
+		return nil
 	case r.error != nil && step.RunPolicy == engine.RunOnSuccess:
 		return nil
 	case r.error == nil && step.RunPolicy == engine.RunOnFailure:
