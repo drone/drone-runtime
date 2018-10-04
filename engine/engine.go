@@ -7,28 +7,23 @@ import (
 	"io"
 )
 
-// Factory defines a runtime engine factory.
-type Factory interface {
-	Create(*Spec) Engine
-}
-
 // Engine defines a runtime engine for pipeline execution.
 type Engine interface {
 	// Setup the pipeline environment.
-	Setup(context.Context) error
+	Setup(context.Context, *Spec) error
 
 	// Create creates the pipeline state.
-	Create(context.Context, *Step) error
+	Create(context.Context, *Spec, *Step) error
 
 	// Start the pipeline step.
-	Start(context.Context, *Step) error
+	Start(context.Context, *Spec, *Step) error
 
 	// Wait for the pipeline step to complete and returns the completion results.
-	Wait(context.Context, *Step) (*State, error)
+	Wait(context.Context, *Spec, *Step) (*State, error)
 
 	// Tail the pipeline step logs.
-	Tail(context.Context, *Step) (io.ReadCloser, error)
+	Tail(context.Context, *Spec, *Step) (io.ReadCloser, error)
 
 	// Destroy the pipeline environment.
-	Destroy(context.Context) error
+	Destroy(context.Context, *Spec) error
 }

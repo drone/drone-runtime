@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/drone/drone-runtime/engine"
-	"github.com/drone/drone-runtime/engine/docker/authutil"
+	"github.com/drone/drone-runtime/engine/docker/auth"
 	"github.com/drone/drone-runtime/engine/docker/stdcopy"
 
 	"docker.io/go-docker"
@@ -19,15 +19,31 @@ import (
 )
 
 type dockerEngine struct {
-	spec   *engine.Spec
 	client docker.APIClient
 }
 
-func (e *dockerEngine) Setup(ctx context.Context) error {
-	if e.spec.Docker != nil {
+// NewEnv returns a new Factory that creates Docker-runtime Engines
+// from the environment.
+func NewEnv() (engine.Engine, error) {
+	cli, err := docker.NewEnvClient()
+	if err != nil {
+		return nil, err
+	}
+	return New(cli), nil
+}
+
+// New returns a new Factory that creates Docker-runtime Engines.
+func New(client docker.APIClient) engine.Engine {
+	return &dockerEngine{
+		client: client,
+	}
+}
+
+func (e *dockerEngine) Setup(ctx context.Context, spec *engine.Spec) error {
+	if spec.Docker != nil {
 		// creates the default temporary (local) volumes
 		// that are mounted into each container step.
-		for _, vol := range e.spec.Docker.Volumes {
+		for _, vol := range spec.Docker.Volumes {
 			if vol.EmptyDir == nil {
 				continue
 			}
@@ -35,7 +51,7 @@ func (e *dockerEngine) Setup(ctx context.Context) error {
 			_, err := e.client.VolumeCreate(ctx, volume.VolumesCreateBody{
 				Name:   vol.Metadata.UID,
 				Driver: "local",
-				Labels: e.spec.Metadata.Labels,
+				Labels: spec.Metadata.Labels,
 			})
 			if err != nil {
 				return err
@@ -45,15 +61,15 @@ func (e *dockerEngine) Setup(ctx context.Context) error {
 
 	// creates the default pod network. All containers
 	// defined in the pipeline are attached to this network.
-	_, err := e.client.NetworkCreate(ctx, e.spec.Metadata.UID, types.NetworkCreate{
+	_, err := e.client.NetworkCreate(ctx, spec.Metadata.UID, types.NetworkCreate{
 		Driver: "bridge",
-		Labels: e.spec.Metadata.Labels,
+		Labels: spec.Metadata.Labels,
 	})
 
 	return err
 }
 
-func (e *dockerEngine) Create(ctx context.Context, step *engine.Step) error {
+func (e *dockerEngine) Create(ctx context.Context, spec *engine.Spec, step *engine.Step) error {
 	if step.Docker == nil {
 		return errors.New("engine: missing docker configuration")
 	}
@@ -68,9 +84,9 @@ func (e *dockerEngine) Create(ctx context.Context, step *engine.Step) error {
 
 	// create pull options with encoded authorization credentials.
 	pullopts := types.ImagePullOptions{}
-	auth, ok := engine.LookupAuth(e.spec, domain)
+	auths, ok := engine.LookupAuth(spec, domain)
 	if ok {
-		pullopts.RegistryAuth = authutil.Encode(auth.Username, auth.Password)
+		pullopts.RegistryAuth = auth.Encode(auths.Username, auths.Password)
 	}
 
 	// automatically pull the latest version of the image if requested
@@ -90,9 +106,9 @@ func (e *dockerEngine) Create(ctx context.Context, step *engine.Step) error {
 	}
 
 	_, err = e.client.ContainerCreate(ctx,
-		toConfig(e.spec, step),
-		toHostConfig(e.spec, step),
-		toNetConfig(e.spec, step),
+		toConfig(spec, step),
+		toHostConfig(spec, step),
+		toNetConfig(spec, step),
 		step.Metadata.UID,
 	)
 
@@ -109,9 +125,9 @@ func (e *dockerEngine) Create(ctx context.Context, step *engine.Step) error {
 		// once the image is successfully pulled we attempt to
 		// re-create the container.
 		_, err = e.client.ContainerCreate(ctx,
-			toConfig(e.spec, step),
-			toHostConfig(e.spec, step),
-			toNetConfig(e.spec, step),
+			toConfig(spec, step),
+			toHostConfig(spec, step),
+			toNetConfig(spec, step),
 			step.Metadata.UID,
 		)
 	}
@@ -122,7 +138,7 @@ func (e *dockerEngine) Create(ctx context.Context, step *engine.Step) error {
 	copyOpts := types.CopyToContainerOptions{}
 	copyOpts.AllowOverwriteDirWithFile = false
 	for _, mount := range step.Files {
-		file, ok := engine.LookupFile(e.spec, mount.Name)
+		file, ok := engine.LookupFile(spec, mount.Name)
 		if !ok {
 			continue
 		}
@@ -138,11 +154,11 @@ func (e *dockerEngine) Create(ctx context.Context, step *engine.Step) error {
 	return nil
 }
 
-func (e *dockerEngine) Start(ctx context.Context, step *engine.Step) error {
+func (e *dockerEngine) Start(ctx context.Context, spec *engine.Spec, step *engine.Step) error {
 	return e.client.ContainerStart(ctx, step.Metadata.UID, types.ContainerStartOptions{})
 }
 
-func (e *dockerEngine) Wait(ctx context.Context, step *engine.Step) (*engine.State, error) {
+func (e *dockerEngine) Wait(ctx context.Context, spec *engine.Spec, step *engine.Step) (*engine.State, error) {
 	wait, errc := e.client.ContainerWait(ctx, step.Metadata.UID, "")
 	select {
 	case <-wait:
@@ -165,7 +181,7 @@ func (e *dockerEngine) Wait(ctx context.Context, step *engine.Step) (*engine.Sta
 	}, nil
 }
 
-func (e *dockerEngine) Tail(ctx context.Context, step *engine.Step) (io.ReadCloser, error) {
+func (e *dockerEngine) Tail(ctx context.Context, spec *engine.Spec, step *engine.Step) (io.ReadCloser, error) {
 	opts := types.ContainerLogsOptions{
 		Follow:     true,
 		ShowStdout: true,
@@ -189,7 +205,7 @@ func (e *dockerEngine) Tail(ctx context.Context, step *engine.Step) (io.ReadClos
 	return rc, nil
 }
 
-func (e *dockerEngine) Destroy(ctx context.Context) error {
+func (e *dockerEngine) Destroy(ctx context.Context, spec *engine.Spec) error {
 	removeOpts := types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveLinks:   false,
@@ -197,14 +213,14 @@ func (e *dockerEngine) Destroy(ctx context.Context) error {
 	}
 
 	// cleanup all containers
-	for _, step := range e.spec.Steps {
+	for _, step := range spec.Steps {
 		e.client.ContainerKill(ctx, step.Metadata.UID, "9")
 		e.client.ContainerRemove(ctx, step.Metadata.UID, removeOpts)
 	}
 
 	// cleanup all volumes
-	if e.spec.Docker != nil {
-		for _, vol := range e.spec.Docker.Volumes {
+	if spec.Docker != nil {
+		for _, vol := range spec.Docker.Volumes {
 			if vol.EmptyDir == nil {
 				continue
 			}
@@ -216,7 +232,7 @@ func (e *dockerEngine) Destroy(ctx context.Context) error {
 	}
 
 	// cleanup the network
-	return e.client.NetworkRemove(ctx, e.spec.Metadata.UID)
+	return e.client.NetworkRemove(ctx, spec.Metadata.UID)
 }
 
 // helper function parses the image and returns the

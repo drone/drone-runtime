@@ -1,0 +1,48 @@
+{
+    "metadata": {
+        "uid": "uid_GPzK101Yka7Hf9JD",
+        "namespace": "ns_cwOiiTAoLeYVHWVv",
+        "name": "test_temp_volume"
+    },
+    "secrets": null,
+    "steps": [
+        {
+            "metadata": {
+                "uid": "uid_cbuOsqukzBEMAG1X",
+                "namespace": "ns_cwOiiTAoLeYVHWVv",
+                "name": "write"
+            },
+            "docker": {
+                "args": [
+                    "-c",
+                    "set -x; set -e; echo 'hello world' > /tmp/greetings.txt; ls -la /tmp"
+                ],
+                "command": [
+                    "/bin/sh"
+                ],
+                "image": "alpine:3.6"
+            },
+            "volumes": [
+                {
+                    "name": "tmp",
+                    "path": "/tmp"
+                }
+            ]
+        }
+    ],
+    "docker": {
+        "volumes": [
+            {
+                "metadata": {
+                    "uid": "uid_NttbpIbQLKCyG8uI",
+                    "namespace": "ns_cwOiiTAoLeYVHWVv",
+                    "name": "tmp"
+                },
+                "temp": {
+                    "medium": "memory",
+                    "size_limit": 1024
+                }
+            }
+        ]
+    }
+}

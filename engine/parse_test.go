@@ -68,6 +68,12 @@ var mockSpec = &Spec{
 			"metadata.labels.key": "metadata.labels.value",
 		},
 	},
+	Platform: Platform{
+		OS:      "platform.os",
+		Arch:    "platform.arch",
+		Version: "platform.version",
+		Variant: "platform.variant",
+	},
 	Secrets: []*Secret{
 		{
 			Name: "secrets.1.name",
@@ -156,7 +162,12 @@ var mockSpec = &Spec{
 			IgnoreStderr: true,
 			Resources:    &Resources{},
 			RunPolicy:    RunAlways,
-			Secrets:      []string{"steps.1.secrets.1"},
+			Secrets: []*SecretVar{
+				{
+					Name: "steps.1.secrets.1.name",
+					Env:  "steps.1.secrets.1.env",
+				},
+			},
 			Volumes: []*VolumeMount{
 				{
 					Name: "steps.1.volumes.1.name",

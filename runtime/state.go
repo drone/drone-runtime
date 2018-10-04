@@ -12,12 +12,14 @@ type State struct {
 	Runtime struct {
 		// Runtime time started
 		Time int64
+
 		// Runtime pipeline error state
 		Error error
 	}
 
 	// Runtime pipeline step
 	Step *engine.Step
+
 	// Current process state.
 	State *engine.State
 }

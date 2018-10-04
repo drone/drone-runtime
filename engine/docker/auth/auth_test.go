@@ -1,4 +1,4 @@
-package authutil
+package auth
 
 import (
 	"bytes"

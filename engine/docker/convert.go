@@ -28,10 +28,10 @@ func toConfig(spec *engine.Spec, step *engine.Step) *container.Config {
 	if len(step.Envs) != 0 {
 		config.Env = toEnv(step.Envs)
 	}
-	for _, name := range step.Secrets {
-		secret, ok := engine.LookupSecret(spec, name)
+	for _, sec := range step.Secrets {
+		secret, ok := engine.LookupSecret(spec, sec)
 		if ok {
-			config.Env = append(config.Env, secret.Name+"="+secret.Data)
+			config.Env = append(config.Env, sec.Env+"="+secret.Data)
 		}
 	}
 	if len(step.Docker.Args) != 0 {
@@ -40,58 +40,63 @@ func toConfig(spec *engine.Spec, step *engine.Step) *container.Config {
 	if len(step.Docker.Command) != 0 {
 		config.Entrypoint = step.Docker.Command
 	}
-	if len(step.Volumes) != 0 {
-		config.Volumes = toVolumeSet(spec, step)
-	}
+
+	// NOTE it appears this is no longer required,
+	// however this could cause incompatibility with
+	// certain docker versions.
+	//
+	//   if len(step.Volumes) != 0 {
+	// 	    config.Volumes = toVolumeSet(spec, step)
+	//   }
 	return config
 }
 
-// TODO: add dns
-// TODO: add dns_search
-// TODO: add extra_hosts
-// TODO: add shmsize
-// TODO: add tmpfs
-// TODO: add devices
-// TODO: set resource limits
-// TODO: set port bindings
 // returns a container host configuration.
-func toHostConfig(spec *engine.Spec, proc *engine.Step) *container.HostConfig {
+func toHostConfig(spec *engine.Spec, step *engine.Step) *container.HostConfig {
 	config := &container.HostConfig{
-		// TODO: map resources to proc.Resources.Limits
-		// Resources: container.Resources{},
 		LogConfig: container.LogConfig{
 			Type: "json-file",
 		},
-		Privileged: proc.Docker.Privileged,
-		// TODO: set shmsize for docker-based (e.g. non-kubernetes) installs
-		// ShmSize: 0,
+		Privileged: step.Docker.Privileged,
+		// TODO(bradrydzewski) set ShmSize
+	}
+	if len(step.Docker.DNS) > 0 {
+		config.DNS = step.Docker.DNS
+	}
+	if len(step.Docker.DNSSearch) > 0 {
+		config.DNSSearch = step.Docker.DNSSearch
+	}
+	if len(step.Docker.ExtraHosts) > 0 {
+		config.ExtraHosts = step.Docker.ExtraHosts
+	}
+	if step.Resources != nil {
+		config.Resources = container.Resources{}
+		if limits := step.Resources.Limits; limits != nil {
+			config.Resources.Memory = limits.Memory
+			// TODO(bradrydewski) set config.Resources.CPUPercent
+
+			// IMPORTANT docker and kubernetes use
+			// different units of measure for cpu limits.
+			// we need to figure out how to convert from
+			// the kubernetes unit of measure to the docker
+			// unit of measure.
+		}
 	}
 
-	// TODO: set DNS and host settings for docker-based (e.g. non-kubernetes) installs
-	// config.DNS
-	// config.DNSSearch
-	// config.ExtraHosts
-
-	if len(proc.Devices) != 0 {
-		// 	config.Devices = toDevices(proc.Devices)
+	// IMPORTANT before we implement devices for docker we
+	// need to implement devices for kubernetes. This might
+	// also require changes to the drone yaml format.
+	if len(step.Devices) != 0 {
+		// TODO(bradrydzewski) set Devices
 	}
-	if len(proc.Volumes) != 0 {
-		config.Binds = toVolumeSlice(spec, proc)
-		config.Mounts = toVolumeMounts(spec, proc)
+	if len(step.Volumes) != 0 {
+		config.Binds = toVolumeSlice(spec, step)
+		config.Mounts = toVolumeMounts(spec, step)
 	}
-	// config.Tmpfs = map[string]string{}
-	// for _, path := range proc.Tmpfs {
-	// 	if strings.Index(path, ":") == -1 {
-	// 		config.Tmpfs[path] = ""
-	// 		continue
-	// 	}
-	// 	parts := strings.Split(path, ":")
-	// 	config.Tmpfs[parts[0]] = parts[1]
-	// }
-
 	return config
 }
 
+// helper function returns the container network configuration.
 func toNetConfig(spec *engine.Spec, proc *engine.Step) *network.NetworkingConfig {
 	endpoints := map[string]*network.EndpointSettings{}
 	endpoints[spec.Metadata.UID] = &network.EndpointSettings{
@@ -103,48 +108,28 @@ func toNetConfig(spec *engine.Spec, proc *engine.Step) *network.NetworkingConfig
 	}
 }
 
-// helper function that converts a slice of volume paths to a set of
-// unique volume names.
-func toVolumeSet(spec *engine.Spec, step *engine.Step) map[string]struct{} {
-	to := map[string]struct{}{}
-	for _, mount := range step.Volumes {
-		volume, ok := engine.LookupVolume(spec, mount.Name)
-		if !ok {
-			continue
-		}
-		if volume.HostPath != nil {
-			if strings.HasPrefix(volume.HostPath.Path, `\\.\pipe\`) {
-				continue
-			}
-		}
-		to[mount.Path] = struct{}{}
-	}
-	return to
-}
-
+// helper function returns a slice of volume mounts.
 func toVolumeSlice(spec *engine.Spec, step *engine.Step) []string {
+	// this entire function should be deprecated in
+	// favor of toVolumeMounts, however, I am unable
+	// to get it working with data volumes.
 	var to []string
 	for _, mount := range step.Volumes {
 		volume, ok := engine.LookupVolume(spec, mount.Name)
 		if !ok {
 			continue
 		}
-		if volume.HostPath != nil {
-			if strings.HasPrefix(volume.HostPath.Path, `\\.\pipe\`) {
-				continue
-			}
+		if isDataVolume(volume) == false {
+			continue
 		}
-		var path string
-		if volume.HostPath != nil {
-			path = volume.HostPath.Path + ":" + mount.Path
-		} else {
-			path = volume.Metadata.UID + ":" + mount.Path
-		}
+		path := volume.Metadata.UID + ":" + mount.Path
 		to = append(to, path)
 	}
 	return to
 }
 
+// helper function returns a slice of docker mount
+// configurations.
 func toVolumeMounts(spec *engine.Spec, step *engine.Step) []mount.Mount {
 	var mounts []mount.Mount
 	for _, target := range step.Volumes {
@@ -152,17 +137,14 @@ func toVolumeMounts(spec *engine.Spec, step *engine.Step) []mount.Mount {
 		if !ok {
 			continue
 		}
-		if source.HostPath == nil {
+		// HACK: this condition can be removed once
+		// toVolumeSlice has been fully replaced. at this
+		// time, I cannot figure out how to get mounts
+		// working with data volumes :(
+		if isDataVolume(source) {
 			continue
 		}
-		if strings.HasPrefix(source.HostPath.Path, `\\.\pipe\`) == false {
-			continue
-		}
-		mounts = append(mounts, mount.Mount{
-			Source: source.HostPath.Path,
-			Target: target.Path,
-			Type:   "npipe",
-		})
+		mounts = append(mounts, toMount(source, target))
 	}
 	if len(mounts) == 0 {
 		return nil
@@ -170,14 +152,70 @@ func toVolumeMounts(spec *engine.Spec, step *engine.Step) []mount.Mount {
 	return mounts
 }
 
-// helper function that converts a key value map of environment variables to a
-// string slice in key=value format.
+// helper function converts the volume declaration to a
+// docker mount structure.
+func toMount(source *engine.Volume, target *engine.VolumeMount) mount.Mount {
+	to := mount.Mount{
+		Target: target.Path,
+		Type:   toVolumeType(source),
+	}
+	if isBindMount(source) || isNamedPipe(source) {
+		to.Source = source.HostPath.Path
+	}
+	if isTempfs(source) {
+		to.TmpfsOptions = &mount.TmpfsOptions{
+			SizeBytes: source.EmptyDir.SizeLimit,
+			Mode:      0700,
+		}
+	}
+	return to
+}
+
+// helper function returns the docker volume enumeration
+// for the given volume.
+func toVolumeType(from *engine.Volume) mount.Type {
+	switch {
+	case isDataVolume(from):
+		return mount.TypeVolume
+	case isTempfs(from):
+		return mount.TypeTmpfs
+	case isNamedPipe(from):
+		return mount.TypeNamedPipe
+	default:
+		return mount.TypeBind
+	}
+}
+
+// helper function that converts a key value map of
+// environment variables to a string slice in key=value
+// format.
 func toEnv(env map[string]string) []string {
 	var envs []string
 	for k, v := range env {
 		envs = append(envs, k+"="+v)
 	}
 	return envs
+}
+
+// returns true if the volume is a bind mount.
+func isBindMount(volume *engine.Volume) bool {
+	return volume.HostPath != nil
+}
+
+// returns true if the volume is in-memory.
+func isTempfs(volume *engine.Volume) bool {
+	return volume.EmptyDir != nil && volume.EmptyDir.Medium == "memory"
+}
+
+// returns true if the volume is a data-volume.
+func isDataVolume(volume *engine.Volume) bool {
+	return volume.EmptyDir != nil && volume.EmptyDir.Medium != "memory"
+}
+
+// returns true if the volume is a named pipe.
+func isNamedPipe(volume *engine.Volume) bool {
+	return volume.HostPath != nil &&
+		strings.HasPrefix(volume.HostPath.Path, `\\.\pipe\`)
 }
 
 // // helper function that converts a slice of device paths to a slice of

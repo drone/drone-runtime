@@ -21,10 +21,10 @@ func LookupVolume(spec *Spec, name string) (*Volume, bool) {
 
 // LookupSecret is a helper function that will lookup the
 // named secret.
-func LookupSecret(spec *Spec, name string) (*Secret, bool) {
-	for _, secret := range spec.Secrets {
-		if secret.Name == name {
-			return secret, true
+func LookupSecret(spec *Spec, secret *SecretVar) (*Secret, bool) {
+	for _, sec := range spec.Secrets {
+		if sec.Name == secret.Name {
+			return sec, true
 		}
 	}
 	return nil, false

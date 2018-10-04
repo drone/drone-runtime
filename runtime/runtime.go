@@ -41,7 +41,7 @@ func (r *Runtime) Resume(ctx context.Context, start int) error {
 		// note that we use a new context to destroy the
 		// environment to ensure it is not in a canceled
 		// state.
-		r.engine.Destroy(context.Background())
+		r.engine.Destroy(context.Background(), r.config)
 	}()
 
 	r.error = nil
@@ -54,7 +54,7 @@ func (r *Runtime) Resume(ctx context.Context, start int) error {
 		}
 	}
 
-	if err := r.engine.Setup(ctx); err != nil {
+	if err := r.engine.Setup(ctx, r.config); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		}
 	}
 
-	if err := r.engine.Create(ctx, step); err != nil {
+	if err := r.engine.Create(ctx, r.config, step); err != nil {
 		// TODO(bradrydzewski) refactor duplicate code
 		if r.hook.AfterEach != nil {
 			r.hook.AfterEach(
@@ -131,7 +131,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		return err
 	}
 
-	if err := r.engine.Start(ctx, step); err != nil {
+	if err := r.engine.Start(ctx, r.config, step); err != nil {
 		// TODO(bradrydzewski) refactor duplicate code
 		if r.hook.AfterEach != nil {
 			r.hook.AfterEach(
@@ -143,7 +143,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		return err
 	}
 
-	rc, err := r.engine.Tail(ctx, step)
+	rc, err := r.engine.Tail(ctx, r.config, step)
 	if err != nil {
 		// TODO(bradrydzewski) refactor duplicate code
 		if r.hook.AfterEach != nil {
@@ -171,7 +171,7 @@ func (r *Runtime) exec(step *engine.Step) error {
 		rc.Close()
 	}()
 
-	wait, err := r.engine.Wait(ctx, step)
+	wait, err := r.engine.Wait(ctx, r.config, step)
 	if err != nil {
 		return err
 	}

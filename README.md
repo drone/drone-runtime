@@ -6,7 +6,7 @@ The runtime package accepts a pipeline definition file as input, which is a simp
 
 Example hello world definition file:
 
-```text
+```json
 {
 	"metadata": {
 		"uid": "uid_AOTCIPBf3XdTFs2j",
@@ -23,7 +23,7 @@ Example hello world definition file:
 			"docker": {
 				"args": [
 					"-c",
-          "echo hello world"
+					"echo hello world"
 				],
 				"command": [
 					"/bin/sh"

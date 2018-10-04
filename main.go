@@ -12,7 +12,7 @@ import (
 
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker"
-	"github.com/drone/drone-runtime/engine/docker/authutil"
+	"github.com/drone/drone-runtime/engine/docker/auth"
 	"github.com/drone/drone-runtime/engine/plugin"
 	"github.com/drone/drone-runtime/runtime"
 	"github.com/drone/drone-runtime/runtime/term"
@@ -47,21 +47,21 @@ func main() {
 	}
 
 	if *c != "" {
-		auths, err := authutil.ParseFile(*c)
+		auths, err := auth.ParseFile(*c)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		config.Docker.Auths = append(config.Docker.Auths, auths...)
 	}
 
-	var factory engine.Factory
+	var engine engine.Engine
 	if *p == "" {
-		factory, err = docker.NewEnv()
+		engine, err = docker.NewEnv()
 		if err != nil {
 			log.Fatalln(err)
 		}
 	} else {
-		factory, err = plugin.Open(*p)
+		engine, err = plugin.Open(*p)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -73,7 +73,6 @@ func main() {
 		hooks.GotLine = term.WriteLinePretty(os.Stdout)
 	}
 
-	engine := factory.Create(config)
 	r := runtime.New(
 		runtime.WithEngine(engine),
 		runtime.WithConfig(config),
@@ -92,7 +91,7 @@ func main() {
 
 func usage() {
 	fmt.Println(`Usage: drone-runtime [OPTION]... [SOURCE]
-	  --config    loads a docker config.json file
+      --config    loads a docker config.json file
       --plugin    loads a runtime engine from a .so file
       --timeout   sets an execution timeout
   -h, --help      display this help and exit`)

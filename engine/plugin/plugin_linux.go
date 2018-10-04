@@ -9,10 +9,10 @@ import (
 )
 
 // Symbol the symbol name used to lookup the plugin provider value.
-const Symbol = "Factory"
+const Symbol = "Engine"
 
 // Open returns a Factory dynamically loaded from a plugin.
-func Open(path string) (engine.Factory, error) {
+func Open(path string) (engine.Engine, error) {
 	lib, err := plugin.Open(path)
 	if err != nil {
 		return nil, err
@@ -21,5 +21,5 @@ func Open(path string) (engine.Factory, error) {
 	if err != nil {
 		return nil, err
 	}
-	return provider.(func() (engine.Factory, error))()
+	return provider.(func() (engine.Engine, error))()
 }
