@@ -1,7 +1,7 @@
 package engine
 
 //go:generate mockgen -source=engine.go -destination=mocks/engine.go
-//-package=mocks -imports=.=github.com/drone/drone-runtime/engine
+
 import (
 	"context"
 	"io"

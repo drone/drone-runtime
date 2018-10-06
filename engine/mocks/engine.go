@@ -12,41 +12,6 @@ import (
 	reflect "reflect"
 )
 
-// MockFactory is a mock of Factory interface
-type MockFactory struct {
-	ctrl     *gomock.Controller
-	recorder *MockFactoryMockRecorder
-}
-
-// MockFactoryMockRecorder is the mock recorder for MockFactory
-type MockFactoryMockRecorder struct {
-	mock *MockFactory
-}
-
-// NewMockFactory creates a new mock instance
-func NewMockFactory(ctrl *gomock.Controller) *MockFactory {
-	mock := &MockFactory{ctrl: ctrl}
-	mock.recorder = &MockFactoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockFactory) EXPECT() *MockFactoryMockRecorder {
-	return m.recorder
-}
-
-// Create mocks base method
-func (m *MockFactory) Create(arg0 *engine.Spec) engine.Engine {
-	ret := m.ctrl.Call(m, "Create", arg0)
-	ret0, _ := ret[0].(engine.Engine)
-	return ret0
-}
-
-// Create indicates an expected call of Create
-func (mr *MockFactoryMockRecorder) Create(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockFactory)(nil).Create), arg0)
-}
-
 // MockEngine is a mock of Engine interface
 type MockEngine struct {
 	ctrl     *gomock.Controller
@@ -71,75 +36,75 @@ func (m *MockEngine) EXPECT() *MockEngineMockRecorder {
 }
 
 // Setup mocks base method
-func (m *MockEngine) Setup(arg0 context.Context) error {
-	ret := m.ctrl.Call(m, "Setup", arg0)
+func (m *MockEngine) Setup(arg0 context.Context, arg1 *engine.Spec) error {
+	ret := m.ctrl.Call(m, "Setup", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Setup indicates an expected call of Setup
-func (mr *MockEngineMockRecorder) Setup(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setup", reflect.TypeOf((*MockEngine)(nil).Setup), arg0)
+func (mr *MockEngineMockRecorder) Setup(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setup", reflect.TypeOf((*MockEngine)(nil).Setup), arg0, arg1)
 }
 
 // Create mocks base method
-func (m *MockEngine) Create(arg0 context.Context, arg1 *engine.Step) error {
-	ret := m.ctrl.Call(m, "Create", arg0, arg1)
+func (m *MockEngine) Create(arg0 context.Context, arg1 *engine.Spec, arg2 *engine.Step) error {
+	ret := m.ctrl.Call(m, "Create", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Create indicates an expected call of Create
-func (mr *MockEngineMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockEngine)(nil).Create), arg0, arg1)
+func (mr *MockEngineMockRecorder) Create(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockEngine)(nil).Create), arg0, arg1, arg2)
 }
 
 // Start mocks base method
-func (m *MockEngine) Start(arg0 context.Context, arg1 *engine.Step) error {
-	ret := m.ctrl.Call(m, "Start", arg0, arg1)
+func (m *MockEngine) Start(arg0 context.Context, arg1 *engine.Spec, arg2 *engine.Step) error {
+	ret := m.ctrl.Call(m, "Start", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start
-func (mr *MockEngineMockRecorder) Start(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockEngine)(nil).Start), arg0, arg1)
+func (mr *MockEngineMockRecorder) Start(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockEngine)(nil).Start), arg0, arg1, arg2)
 }
 
 // Wait mocks base method
-func (m *MockEngine) Wait(arg0 context.Context, arg1 *engine.Step) (*engine.State, error) {
-	ret := m.ctrl.Call(m, "Wait", arg0, arg1)
+func (m *MockEngine) Wait(arg0 context.Context, arg1 *engine.Spec, arg2 *engine.Step) (*engine.State, error) {
+	ret := m.ctrl.Call(m, "Wait", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*engine.State)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Wait indicates an expected call of Wait
-func (mr *MockEngineMockRecorder) Wait(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Wait", reflect.TypeOf((*MockEngine)(nil).Wait), arg0, arg1)
+func (mr *MockEngineMockRecorder) Wait(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Wait", reflect.TypeOf((*MockEngine)(nil).Wait), arg0, arg1, arg2)
 }
 
 // Tail mocks base method
-func (m *MockEngine) Tail(arg0 context.Context, arg1 *engine.Step) (io.ReadCloser, error) {
-	ret := m.ctrl.Call(m, "Tail", arg0, arg1)
+func (m *MockEngine) Tail(arg0 context.Context, arg1 *engine.Spec, arg2 *engine.Step) (io.ReadCloser, error) {
+	ret := m.ctrl.Call(m, "Tail", arg0, arg1, arg2)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Tail indicates an expected call of Tail
-func (mr *MockEngineMockRecorder) Tail(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tail", reflect.TypeOf((*MockEngine)(nil).Tail), arg0, arg1)
+func (mr *MockEngineMockRecorder) Tail(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tail", reflect.TypeOf((*MockEngine)(nil).Tail), arg0, arg1, arg2)
 }
 
 // Destroy mocks base method
-func (m *MockEngine) Destroy(arg0 context.Context) error {
-	ret := m.ctrl.Call(m, "Destroy", arg0)
+func (m *MockEngine) Destroy(arg0 context.Context, arg1 *engine.Spec) error {
+	ret := m.ctrl.Call(m, "Destroy", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Destroy indicates an expected call of Destroy
-func (mr *MockEngineMockRecorder) Destroy(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destroy", reflect.TypeOf((*MockEngine)(nil).Destroy), arg0)
+func (mr *MockEngineMockRecorder) Destroy(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Destroy", reflect.TypeOf((*MockEngine)(nil).Destroy), arg0, arg1)
 }
