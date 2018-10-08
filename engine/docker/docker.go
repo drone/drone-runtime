@@ -20,8 +20,7 @@ type dockerEngine struct {
 	client docker.APIClient
 }
 
-// NewEnv returns a new Factory that creates Docker-runtime Engines
-// from the environment.
+// NewEnv returns a new Engine from the environment.
 func NewEnv() (engine.Engine, error) {
 	cli, err := docker.NewEnvClient()
 	if err != nil {
@@ -30,7 +29,7 @@ func NewEnv() (engine.Engine, error) {
 	return New(cli), nil
 }
 
-// New returns a new Factory that creates Docker-runtime Engines.
+// New returns a new Engine using the Docker API Client.
 func New(client docker.APIClient) engine.Engine {
 	return &dockerEngine{
 		client: client,
@@ -224,7 +223,7 @@ func (e *dockerEngine) Destroy(ctx context.Context, spec *engine.Spec) error {
 			}
 			err := e.client.VolumeRemove(ctx, vol.Metadata.UID, true)
 			if err != nil {
-				return err
+				// TODO collect all errors using multi-error
 			}
 		}
 	}

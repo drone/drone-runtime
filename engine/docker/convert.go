@@ -89,6 +89,7 @@ func toHostConfig(spec *engine.Spec, step *engine.Step) *container.HostConfig {
 	if len(step.Devices) != 0 {
 		// TODO(bradrydzewski) set Devices
 	}
+
 	if len(step.Volumes) != 0 {
 		config.Binds = toVolumeSlice(spec, step)
 		config.Mounts = toVolumeMounts(spec, step)
