@@ -7,8 +7,79 @@ import (
 	"github.com/drone/drone-runtime/engine"
 
 	"docker.io/go-docker/api/types/mount"
+	"docker.io/go-docker/api/types/network"
 	"github.com/google/go-cmp/cmp"
 )
+
+func TestToConfig(t *testing.T) {
+	t.Skip()
+}
+
+func TestToHostConfig(t *testing.T) {
+	t.Skip()
+}
+
+func TestToVolumeSlice(t *testing.T) {
+	step := &engine.Step{
+		Volumes: []*engine.VolumeMount{
+			{Name: "foo", Path: "/foo"},
+			{Name: "bar", Path: "/bar"},
+			{Name: "baz", Path: "/baz"},
+		},
+	}
+	spec := &engine.Spec{
+		Steps: []*engine.Step{step},
+		Docker: &engine.DockerConfig{
+			Volumes: []*engine.Volume{
+				{
+					Metadata: engine.Metadata{Name: "foo", UID: "1"},
+					EmptyDir: &engine.VolumeEmptyDir{},
+				},
+				{
+					Metadata: engine.Metadata{Name: "bar", UID: "2"},
+					HostPath: &engine.VolumeHostPath{Path: "/bar"},
+				},
+			},
+		},
+	}
+
+	a := toVolumeSlice(spec, step)
+	b := []string{"1:/foo"}
+	if diff := cmp.Diff(a, b); diff != "" {
+		t.Errorf("Unexpected volume slice")
+		t.Log(diff)
+	}
+}
+
+func TestToVolumeMounts(t *testing.T) {
+	t.Skip()
+}
+
+func TestToNetConfig(t *testing.T) {
+	step := &engine.Step{
+		Metadata: engine.Metadata{
+			Name: "redis",
+		},
+	}
+	spec := &engine.Spec{
+		Metadata: engine.Metadata{
+			UID: "abc123",
+		},
+		Steps: []*engine.Step{step},
+	}
+	a := toNetConfig(spec, step)
+	b := &network.NetworkingConfig{
+		EndpointsConfig: map[string]*network.EndpointSettings{
+			"abc123": &network.EndpointSettings{
+				Aliases:   []string{"redis"},
+				NetworkID: "abc123"},
+		},
+	}
+	if diff := cmp.Diff(a, b); diff != "" {
+		t.Errorf("Unexpected network configuration")
+		t.Log(diff)
+	}
+}
 
 func TestToEnv(t *testing.T) {
 	kv := map[string]string{
