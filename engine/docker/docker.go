@@ -209,9 +209,13 @@ func (e *dockerEngine) Destroy(ctx context.Context, spec *engine.Spec) error {
 		RemoveVolumes: true,
 	}
 
-	// cleanup all containers
+	// stop all containers
 	for _, step := range spec.Steps {
 		e.client.ContainerKill(ctx, step.Metadata.UID, "9")
+	}
+
+	// cleanup all containers
+	for _, step := range spec.Steps {
 		e.client.ContainerRemove(ctx, step.Metadata.UID, removeOpts)
 	}
 
@@ -221,13 +225,21 @@ func (e *dockerEngine) Destroy(ctx context.Context, spec *engine.Spec) error {
 			if vol.EmptyDir == nil {
 				continue
 			}
-			err := e.client.VolumeRemove(ctx, vol.Metadata.UID, true)
-			if err != nil {
-				// TODO collect all errors using multi-error
+			// tempfs volumes do not have a volume entry,
+			// and therefore do not require removal.
+			if vol.EmptyDir.Medium == "memory" {
+				continue
 			}
+			e.client.VolumeRemove(ctx, vol.Metadata.UID, true)
 		}
 	}
 
 	// cleanup the network
-	return e.client.NetworkRemove(ctx, spec.Metadata.UID)
+	e.client.NetworkRemove(ctx, spec.Metadata.UID)
+
+	// notice that we never collect or return any errors.
+	// this is because we silently ignore cleanup failures
+	// and instead ask the system admin to periodically run
+	// `docker prune` commands.
+	return nil
 }

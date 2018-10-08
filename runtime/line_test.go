@@ -50,9 +50,7 @@ func TestLineReplacer(t *testing.T) {
 	// ensure the replacer is nil when the secret list is empty
 	// or contains no masked secrets.
 
-	secrets = []*engine.Secret{
-		{Name: "foo", Data: "bar"},
-	}
+	secrets = []*engine.Secret{}
 	replacer = newReplacer(secrets)
 	if replacer != nil {
 		t.Errorf("Expect nil replacer when no masked secrets")

@@ -18,8 +18,8 @@ type Runtime struct {
 	error  error
 }
 
-// New returns a new runtime using the specified runtime configuration
-// and runtime engine.
+// New returns a new runtime using the specified runtime
+// configuration and runtime engine.
 func New(opts ...Option) *Runtime {
 	r := &Runtime{}
 	r.hook = &Hook{}
@@ -34,8 +34,8 @@ func (r *Runtime) Run(ctx context.Context) error {
 	return r.Resume(ctx, 0)
 }
 
-// Resume starts the pipeline at the specified stage and waits
-// for it to complete.
+// Resume starts the pipeline at the specified stage and
+// waits for it to complete.
 func (r *Runtime) Resume(ctx context.Context, start int) error {
 	defer func() {
 		// note that we use a new context to destroy the

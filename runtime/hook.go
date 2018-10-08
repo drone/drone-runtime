@@ -1,6 +1,7 @@
 package runtime
 
-// Hook provides a set of hooks to run at various stages of runtime execution.
+// Hook provides a set of hooks to run at various stages of
+// runtime execution.
 type Hook struct {
 	// Before is called before all all steps are executed.
 	Before func(*State) error
