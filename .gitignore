@@ -1,4 +1,5 @@
 vendor
+release
 *.out
 *.txt
 .docker/config.json
