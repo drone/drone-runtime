@@ -64,22 +64,13 @@ Example command tests docker login:
 drone-runtime --config=path/to/config.json samples/11_requires_auth.json
 ```
 
-## Runtime Engines
+## Kubernetes Engines
 
-The default runtime engine targets Docker, but can be extended using plugins. The plugin loader expects your custom engine is exposed using the following convention:
+The default runtime engine targets Docker, however, there is an experimental runtime engine that targets Kubernetes. Pipeline containers are launched as Pods using the Kubernetes API.
 
-```text
-package main
-
-import "github.com/drone/drone-runtime/engine"
-
-func Engine() (engine.Engine, error) {
-  // return your custom engine implementation
-}
 ```
-
-Test your plugin using the command line utility:
-
-```text
-drone-runtime --plugin=custom/plugin.so samples/1_hello_world.json
+drone-runtime \
+  --kube-url=https://localhost:6443 \
+  --kube-config=~/.kube/config \
+  samples/kubernetes/1_hello_world.json
 ```

@@ -13,7 +13,7 @@ import (
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker"
 	"github.com/drone/drone-runtime/engine/docker/auth"
-	"github.com/drone/drone-runtime/engine/plugin"
+	"github.com/drone/drone-runtime/engine/kube"
 	"github.com/drone/drone-runtime/runtime"
 	"github.com/drone/drone-runtime/runtime/term"
 	"github.com/drone/signal"
@@ -23,7 +23,9 @@ var tty = isatty.IsTerminal(os.Stdout.Fd())
 
 func main() {
 	c := flag.String("config", "", "")
-	p := flag.String("plugin", "", "")
+	k := flag.String("kube-config", "", "")
+	u := flag.String("kube-url", "", "")
+	d := flag.Bool("kube-debug", false, "")
 	t := flag.Duration("timeout", time.Hour, "")
 	h := flag.Bool("help", false, "")
 
@@ -54,14 +56,19 @@ func main() {
 		config.Docker.Auths = append(config.Docker.Auths, auths...)
 	}
 
+	if *d == true {
+		println(kube.Print(config))
+		return
+	}
+
 	var engine engine.Engine
-	if *p == "" {
+	if *k == "" {
 		engine, err = docker.NewEnv()
 		if err != nil {
 			log.Fatalln(err)
 		}
 	} else {
-		engine, err = plugin.Open(*p)
+		engine, err = kube.NewFile(*u, *k)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -91,8 +98,11 @@ func main() {
 
 func usage() {
 	fmt.Println(`Usage: drone-runtime [OPTION]... [SOURCE]
-      --config    loads a docker config.json file
-      --plugin    loads a runtime engine from a .so file
-      --timeout   sets an execution timeout
-  -h, --help      display this help and exit`)
+      --config      loads a docker config.json file
+      --plugin      loads a runtime engine from a .so file
+      --kube-config loads a kubernetes config file
+	  --kube-url    sets a kubernetes endpoint
+	  --kube-debug  writes a kubernetes configuration to stdout
+      --timeout     sets an execution timeout
+  -h, --help        display this help and exit`)
 }

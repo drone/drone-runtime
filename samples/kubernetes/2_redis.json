@@ -1,0 +1,192 @@
+{
+  "metadata": {
+    "uid": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+    "namespace": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+    "name": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+    "labels": {
+      "io.drone.pipeline.kind": "pipeline",
+      "io.drone.pipeline.name": "",
+      "io.drone.pipeline.type": ""
+    }
+  },
+  "platform": {},
+  "steps": [
+    {
+      "metadata": {
+        "uid": "ksreb5z2ybkpa5kzey3w7ip29i8gkbt6",
+        "namespace": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+        "name": "redis",
+        "labels": {
+          "io.drone.step.name": "redis"
+        }
+      },
+      "detach": true,
+      "environment": {
+        "CI_WORKSPACE": "/drone/src",
+        "CI_WORKSPACE_BASE": "/drone",
+        "CI_WORKSPACE_PATH": "src",
+        "DRONE_BUILD_EVENT": "",
+        "DRONE_COMMIT_BRANCH": "",
+        "DRONE_COMMIT_REF": "",
+        "DRONE_COMMIT_SHA": "",
+        "DRONE_REMOTE_URL": "",
+        "DRONE_WORKSPACE": "/drone/src",
+        "DRONE_WORKSPACE_BASE": "/drone",
+        "DRONE_WORKSPACE_PATH": "src"
+      },
+      "volumes": [
+        {
+          "name": "workspace",
+          "path": "/drone"
+        }
+      ],
+      "docker": {
+        "image": "docker.io/library/redis:4-alpine",
+        "ports": [
+          {
+            "port": 6379
+          }
+        ]
+      },
+      "kubernetes": {}
+    },
+    {
+      "metadata": {
+        "uid": "tzp4ouvgm6x7lsigbhilkiekrs4gk988",
+        "namespace": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+        "name": "ping",
+        "labels": {
+          "io.drone.step.name": "ping"
+        }
+      },
+      "environment": {
+        "CI_WORKSPACE": "/drone/src",
+        "CI_WORKSPACE_BASE": "/drone",
+        "CI_WORKSPACE_PATH": "src",
+        "DRONE_BUILD_EVENT": "",
+        "DRONE_COMMIT_BRANCH": "",
+        "DRONE_COMMIT_REF": "",
+        "DRONE_COMMIT_SHA": "",
+        "DRONE_REMOTE_URL": "",
+        "DRONE_WORKSPACE": "/drone/src",
+        "DRONE_WORKSPACE_BASE": "/drone",
+        "DRONE_WORKSPACE_PATH": "src"
+      },
+      "files": [
+        {
+          "name": "ping",
+          "path": "/usr/drone/bin/init",
+          "mode": 511
+        }
+      ],
+      "volumes": [
+        {
+          "name": "workspace",
+          "path": "/drone"
+        }
+      ],
+      "working_dir": "/drone/src",
+      "docker": {
+        "args": [
+          "/usr/drone/bin/init"
+        ],
+        "command": [
+          "/bin/sh"
+        ],
+        "image": "docker.io/library/redis:4-alpine"
+      },
+      "kubernetes": {
+        "args": [
+          "/usr/drone/bin/init"
+        ],
+        "command": [
+          "/bin/sh"
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "uid": "7r5eivubtvgyloclxlqfii5bb04sjzqb",
+        "namespace": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+        "name": "greetings",
+        "labels": {
+          "io.drone.step.name": "greetings"
+        }
+      },
+      "environment": {
+        "CI_WORKSPACE": "/drone/src",
+        "CI_WORKSPACE_BASE": "/drone",
+        "CI_WORKSPACE_PATH": "src",
+        "DRONE_BUILD_EVENT": "",
+        "DRONE_COMMIT_BRANCH": "",
+        "DRONE_COMMIT_REF": "",
+        "DRONE_COMMIT_SHA": "",
+        "DRONE_REMOTE_URL": "",
+        "DRONE_WORKSPACE": "/drone/src",
+        "DRONE_WORKSPACE_BASE": "/drone",
+        "DRONE_WORKSPACE_PATH": "src"
+      },
+      "files": [
+        {
+          "name": "greetings",
+          "path": "/usr/drone/bin/init",
+          "mode": 511
+        }
+      ],
+      "volumes": [
+        {
+          "name": "workspace",
+          "path": "/drone"
+        }
+      ],
+      "working_dir": "/drone/src",
+      "docker": {
+        "args": [
+          "/usr/drone/bin/init"
+        ],
+        "command": [
+          "/bin/sh"
+        ],
+        "image": "docker.io/library/golang:1.11"
+      },
+      "kubernetes": {
+        "args": [
+          "/usr/drone/bin/init"
+        ],
+        "command": [
+          "/bin/sh"
+        ]
+      }
+    }
+  ],
+  "files": [
+    {
+      "metadata": {
+        "uid": "0ko8zg28dw0kl9j9bb1ecoek8cgfaspi",
+        "namespace": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+        "name": "ping"
+      },
+      "data": "CmlmIFsgLW4gIiRDSV9ORVRSQ19NQUNISU5FIiBdOyB0aGVuCmNhdCA8PEVPRiA+ICRIT01FLy5uZXRyYwptYWNoaW5lICRDSV9ORVRSQ19NQUNISU5FCmxvZ2luICRDSV9ORVRSQ19VU0VSTkFNRQpwYXNzd29yZCAkQ0lfTkVUUkNfUEFTU1dPUkQKRU9GCmNobW9kIDA2MDAgJEhPTUUvLm5ldHJjCmZpCnVuc2V0IENJX05FVFJDX1VTRVJOQU1FCnVuc2V0IENJX05FVFJDX1BBU1NXT1JECnVuc2V0IERST05FX05FVFJDX1VTRVJOQU1FCnVuc2V0IERST05FX05FVFJDX1BBU1NXT1JECnNldCAtZQoKZWNobyArICJzbGVlcCA1IgpzbGVlcCA1CgplY2hvICsgImVjaG8gXCRSRURJU19TRVJWSUNFX0hPU1QiCmVjaG8gJFJFRElTX1NFUlZJQ0VfSE9TVAoKZWNobyArICJyZWRpcy1jbGkgLWggXCRSRURJU19TRVJWSUNFX0hPU1QgcGluZyIKcmVkaXMtY2xpIC1oICRSRURJU19TRVJWSUNFX0hPU1QgcGluZwoK"
+    },
+    {
+      "metadata": {
+        "uid": "aiagbxuvgt5rbbtxsava8s0uiq8mybf2",
+        "namespace": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+        "name": "greetings"
+      },
+      "data": "CmlmIFsgLW4gIiRDSV9ORVRSQ19NQUNISU5FIiBdOyB0aGVuCmNhdCA8PEVPRiA+ICRIT01FLy5uZXRyYwptYWNoaW5lICRDSV9ORVRSQ19NQUNISU5FCmxvZ2luICRDSV9ORVRSQ19VU0VSTkFNRQpwYXNzd29yZCAkQ0lfTkVUUkNfUEFTU1dPUkQKRU9GCmNobW9kIDA2MDAgJEhPTUUvLm5ldHJjCmZpCnVuc2V0IENJX05FVFJDX1VTRVJOQU1FCnVuc2V0IENJX05FVFJDX1BBU1NXT1JECnVuc2V0IERST05FX05FVFJDX1VTRVJOQU1FCnVuc2V0IERST05FX05FVFJDX1BBU1NXT1JECnNldCAtZQoKZWNobyArICJlY2hvIGhlbGxvIgplY2hvIGhlbGxvCgplY2hvICsgImVjaG8gd29ybGQiCmVjaG8gd29ybGQKCg=="
+    }
+  ],
+  "docker": {
+    "volumes": [
+      {
+        "metadata": {
+          "uid": "8cx1najyo07pzz5upznp2s6wx8zf81fs",
+          "namespace": "lfjucpr8oj42d4raoo88mor0ueq7aipk",
+          "name": "workspace"
+        },
+        "temp": {}
+      }
+    ]
+  }
+}

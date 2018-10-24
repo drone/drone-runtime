@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "uid": "810r59j9lvmcflafw7g2oinvmzbrs5zr",
+    "namespace": "810r59j9lvmcflafw7g2oinvmzbrs5zr",
+    "name": "810r59j9lvmcflafw7g2oinvmzbrs5zr",
+    "labels": {
+      "io.drone.pipeline.kind": "pipeline",
+      "io.drone.pipeline.name": "default",
+      "io.drone.pipeline.type": ""
+    }
+  },
+  "platform": {},
+  "steps": [
+    {
+      "metadata": {
+        "uid": "hczqch6uzentfwtl7ocrtffjhjcz9yee",
+        "namespace": "810r59j9lvmcflafw7g2oinvmzbrs5zr",
+        "name": "greetings",
+        "labels": {
+          "io.drone.step.name": "greetings"
+        }
+      },
+      "environment": {
+        "CI_WORKSPACE": "/drone/src",
+        "CI_WORKSPACE_BASE": "/drone",
+        "CI_WORKSPACE_PATH": "src",
+        "DRONE_BUILD_EVENT": "",
+        "DRONE_COMMIT_BRANCH": "",
+        "DRONE_COMMIT_REF": "",
+        "DRONE_COMMIT_SHA": "",
+        "DRONE_REMOTE_URL": "",
+        "DRONE_WORKSPACE": "/drone/src",
+        "DRONE_WORKSPACE_BASE": "/drone",
+        "DRONE_WORKSPACE_PATH": "src"
+      },
+      "files": [
+        {
+          "name": "greetings",
+          "path": "/usr/drone/bin/init",
+          "mode": 511
+        }
+      ],
+      "volumes": [
+        {
+          "name": "workspace",
+          "path": "/drone"
+        }
+      ],
+      "working_dir": "/drone/src",
+      "docker": {
+        "args": [
+          "/usr/drone/bin/init"
+        ],
+        "command": [
+          "/bin/sh"
+        ],
+        "image": "docker.io/library/alpine:latest"
+      },
+      "kubernetes": {
+        "args": [
+          "/usr/drone/bin/init"
+        ],
+        "command": [
+          "/bin/sh"
+        ]
+      }
+    }
+  ],
+  "files": [
+    {
+      "metadata": {
+        "uid": "6hgg9lkszo2hwril6zd05ansk90whrkw",
+        "namespace": "810r59j9lvmcflafw7g2oinvmzbrs5zr",
+        "name": "greetings"
+      },
+      "data": "CmlmIFsgLW4gIiRDSV9ORVRSQ19NQUNISU5FIiBdOyB0aGVuCmNhdCA8PEVPRiA+ICRIT01FLy5uZXRyYwptYWNoaW5lICRDSV9ORVRSQ19NQUNISU5FCmxvZ2luICRDSV9ORVRSQ19VU0VSTkFNRQpwYXNzd29yZCAkQ0lfTkVUUkNfUEFTU1dPUkQKRU9GCmNobW9kIDA2MDAgJEhPTUUvLm5ldHJjCmZpCnVuc2V0IENJX05FVFJDX1VTRVJOQU1FCnVuc2V0IENJX05FVFJDX1BBU1NXT1JECnVuc2V0IERST05FX05FVFJDX1VTRVJOQU1FCnVuc2V0IERST05FX05FVFJDX1BBU1NXT1JECnNldCAtZQoKZWNobyArICJlY2hvIGhlbGxvIgplY2hvIGhlbGxvCgplY2hvICsgImVjaG8gd29ybGQiCmVjaG8gd29ybGQKCg=="
+    }
+  ],
+  "docker": {
+    "volumes": [
+      {
+        "metadata": {
+          "uid": "qm2ua64xtfc26wmwt4bk91yf982mpi06",
+          "namespace": "810r59j9lvmcflafw7g2oinvmzbrs5zr",
+          "name": "workspace"
+        },
+        "temp": {}
+      }
+    ]
+  }
+}

@@ -42,8 +42,8 @@ func TestToConfig(t *testing.T) {
 		Steps: []*engine.Step{step},
 		Secrets: []*engine.Secret{
 			{
-				Name: "password",
-				Data: "correct-horse-battery-staple",
+				Metadata: engine.Metadata{Name: "password"},
+				Data:     "correct-horse-battery-staple",
 			},
 		},
 	}
