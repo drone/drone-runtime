@@ -19,7 +19,7 @@ func TestLineWriter(t *testing.T) {
 	state.Step = &engine.Step{}
 	state.config = &engine.Spec{}
 	state.config.Secrets = []*engine.Secret{
-		{Name: "foo", Data: "bar"},
+		{Metadata: engine.Metadata{Name: "foo"}, Data: "bar"},
 	}
 
 	newWriter(state).Write([]byte("foobar"))
@@ -37,7 +37,7 @@ func TestLineWriter(t *testing.T) {
 
 func TestLineReplacer(t *testing.T) {
 	secrets := []*engine.Secret{
-		{Name: "foo", Data: "bar"},
+		{Metadata: engine.Metadata{Name: "foo"}, Data: "bar"},
 	}
 	replacer := newReplacer(secrets)
 	if replacer == nil {
