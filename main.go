@@ -101,8 +101,8 @@ func usage() {
       --config      loads a docker config.json file
       --plugin      loads a runtime engine from a .so file
       --kube-config loads a kubernetes config file
-	  --kube-url    sets a kubernetes endpoint
-	  --kube-debug  writes a kubernetes configuration to stdout
+      --kube-url    sets a kubernetes endpoint
+      --kube-debug  writes a kubernetes configuration to stdout
       --timeout     sets an execution timeout
   -h, --help        display this help and exit`)
 }
