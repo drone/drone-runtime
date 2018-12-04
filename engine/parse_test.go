@@ -76,14 +76,14 @@ var mockSpec = &Spec{
 	},
 	Secrets: []*Secret{
 		{
-			Name: "secrets.1.name",
-			Data: "secrets.1.data",
+			Metadata: Metadata{Name: "secrets.1.name"},
+			Data:     "secrets.1.data",
 		},
 	},
 	Files: []*File{
 		{
-			Name: "files.1.name",
-			Data: []byte("files.1.data"),
+			Metadata: Metadata{Name: "files.1.name"},
+			Data:     []byte("files.1.data"),
 		},
 	},
 	Docker: &DockerConfig{

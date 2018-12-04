@@ -7,7 +7,7 @@ import "testing"
 //
 
 func TestLookupFile(t *testing.T) {
-	want := &File{Name: "foo"}
+	want := &File{Metadata: Metadata{Name: "foo"}}
 	spec := &Spec{
 		Files: []*File{want},
 	}
@@ -21,7 +21,7 @@ func TestLookupFile(t *testing.T) {
 }
 
 func TestLookupFile_NotFound(t *testing.T) {
-	want := &File{Name: "foo"}
+	want := &File{Metadata: Metadata{Name: "foo"}}
 	spec := &Spec{
 		Files: []*File{want},
 	}
@@ -39,7 +39,7 @@ func TestLookupFile_NotFound(t *testing.T) {
 //
 
 func TestLookupSecret(t *testing.T) {
-	want := &Secret{Name: "foo"}
+	want := &Secret{Metadata: Metadata{Name: "foo"}}
 	spec := &Spec{
 		Secrets: []*Secret{want},
 	}
@@ -53,7 +53,7 @@ func TestLookupSecret(t *testing.T) {
 }
 
 func TestLookupSecret_NotFound(t *testing.T) {
-	want := &Secret{Name: "foo"}
+	want := &Secret{Metadata: Metadata{Name: "foo"}}
 	spec := &Spec{
 		Secrets: []*Secret{want},
 	}
