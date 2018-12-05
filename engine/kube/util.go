@@ -2,6 +2,7 @@ package kube
 
 import (
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/drone/drone-runtime/engine"
@@ -24,6 +25,14 @@ func toEnv(spec *engine.Spec, step *engine.Step) []v1.EnvVar {
 			Value: v,
 		})
 	}
+	to = append(to, v1.EnvVar{
+		Name: "KUBERNETES_NODE",
+		ValueFrom: &v1.EnvVarSource{
+			FieldRef: &v1.ObjectFieldSelector{
+				FieldPath: "spec.nodeName",
+			},
+		},
+	})
 	for _, secret := range step.Secrets {
 		sec, ok := engine.LookupSecret(spec, secret)
 		if !ok {
@@ -136,7 +145,17 @@ func toVolumes(spec *engine.Spec, step *engine.Step) []v1.Volume {
 			}
 		}
 		if vol.EmptyDir != nil {
-			volume.EmptyDir = &v1.EmptyDirVolumeSource{}
+			// volume.EmptyDir = &v1.EmptyDirVolumeSource{}
+
+			// NOTE the empty_dir cannot be shared across multiple
+			// pods so we emulate its behavior, and mount a temp
+			// directory on the host machine that can be shared
+			// between pods. This means we are responsible for deleting
+			// these directories.
+			volume.HostPath = &v1.HostPathVolumeSource{
+				Path: filepath.Join("/tmp", "drone", spec.Metadata.Namespace, vol.Metadata.Namespace),
+				Type: &source,
+			}
 		}
 		to = append(to, volume)
 	}

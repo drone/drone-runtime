@@ -3,6 +3,8 @@ package kube
 import (
 	"context"
 	"io"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/drone/drone-runtime/engine"
@@ -20,11 +22,12 @@ import (
 
 type kubeEngine struct {
 	client *kubernetes.Clientset
+	node   string
 }
 
 // NewFile returns a new Kubernetes engine from a
 // Kubernetes configuration file (~/.kube/config).
-func NewFile(url, path string) (engine.Engine, error) {
+func NewFile(url, path, node string) (engine.Engine, error) {
 	config, err := clientcmd.BuildConfigFromFlags(url, path)
 	if err != nil {
 		return nil, err
@@ -33,7 +36,7 @@ func NewFile(url, path string) (engine.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kubeEngine{client: client}, nil
+	return &kubeEngine{client: client, node: node}, nil
 }
 
 func (e *kubeEngine) Setup(ctx context.Context, spec *engine.Spec) error {
@@ -96,6 +99,18 @@ func (e *kubeEngine) Setup(ctx context.Context, spec *engine.Spec) error {
 		}
 	}
 
+	// pv := toPersistentVolume(e.node, spec.Metadata.Namespace, spec.Metadata.Namespace, filepath.Join("/tmp", spec.Metadata.Namespace))
+	// _, err = e.client.CoreV1().PersistentVolumes().Create(pv)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// pvc := toPersistentVolumeClaim(spec.Metadata.Namespace, spec.Metadata.Namespace)
+	// _, err = e.client.CoreV1().PersistentVolumeClaims(spec.Metadata.Namespace).Create(pvc)
+	// if err != nil {
+	// 	return err
+	// }
+
 	return nil
 }
 
@@ -113,53 +128,74 @@ func (e *kubeEngine) Start(ctx context.Context, spec *engine.Spec, step *engine.
 			return err
 		}
 	}
+
+	if e.node != "" {
+		pod.Spec.Affinity = &v1.Affinity{
+			NodeAffinity: &v1.NodeAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
+					NodeSelectorTerms: []v1.NodeSelectorTerm{{
+						MatchExpressions: []v1.NodeSelectorRequirement{{
+							Key:      "kubernetes.io/hostname",
+							Operator: v1.NodeSelectorOpIn,
+							Values:   []string{e.node},
+						}},
+					}},
+				},
+			},
+		}
+	}
+
 	_, err := e.client.CoreV1().Pods(spec.Metadata.Namespace).Create(pod)
 	return err
 }
 
 func (e *kubeEngine) Wait(ctx context.Context, spec *engine.Spec, step *engine.Step) (*engine.State, error) {
-	podName := step.Metadata.UID
-
-	finished := make(chan bool)
-
-	var podUpdated = func(old interface{}, new interface{}) {
+	stopper := make(chan struct{})
+	updater := func(old interface{}, new interface{}) {
 		pod := new.(*v1.Pod)
-		if pod.Name == podName {
+		// ignore events that do not come from the
+		// current pod namespace.
+		if pod.ObjectMeta.Namespace != step.Metadata.Namespace {
+			return
+		}
+		if pod.Name == step.Metadata.UID {
 			switch pod.Status.Phase {
 			case v1.PodSucceeded, v1.PodFailed, v1.PodUnknown:
-				finished <- true
+				// TODO need to understand if this could be
+				// invoked multiple times.
+				select {
+				case stopper <- struct{}{}:
+				default:
+				}
 			}
 		}
 	}
 
-	si := informers.NewSharedInformerFactory(e.client, 5*time.Minute)
-	si.Core().V1().Pods().Informer().AddEventHandler(
+	factory := informers.NewSharedInformerFactory(e.client, time.Second)
+	informer := factory.Core().V1().Pods().Informer()
+	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: podUpdated,
+			UpdateFunc: updater,
 		},
 	)
-	si.Start(wait.NeverStop)
+	factory.Start(wait.NeverStop)
 
 	// TODO Cancel on ctx.Done
-	select {
-	case <-finished:
-	case <-ctx.Done():
-	}
+	<-stopper
 
-	pod, err := e.client.CoreV1().Pods(spec.Metadata.Namespace).Get(podName, metav1.GetOptions{
+	pod, err := e.client.CoreV1().Pods(spec.Metadata.Namespace).Get(step.Metadata.UID, metav1.GetOptions{
 		IncludeUninitialized: true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	bs := &engine.State{
+	state := &engine.State{
 		ExitCode:  int(pod.Status.ContainerStatuses[0].State.Terminated.ExitCode),
 		Exited:    true,
 		OOMKilled: false,
 	}
-
-	return bs, nil
+	return state, nil
 }
 
 func (e *kubeEngine) Tail(ctx context.Context, spec *engine.Spec, step *engine.Step) (io.ReadCloser, error) {
@@ -205,6 +241,29 @@ func (e *kubeEngine) Tail(ctx context.Context, spec *engine.Spec, step *engine.S
 }
 
 func (e *kubeEngine) Destroy(ctx context.Context, spec *engine.Spec) error {
+	// err := e.client.CoreV1().PersistentVolumes().Delete(spec.Metadata.Namespace, nil)
+	// if err != nil {
+	// 	// TODO show error message
+	// }
+
+	// err = e.client.CoreV1().PersistentVolumeClaims(spec.Metadata.Namespace).Delete("workspace", nil)
+	// if err != nil {
+	// 	// TODO show error message
+	// }
+
+	// this is a complete hack. we are creating a host machine
+	// directory which should be handled by a persistent volume.
+	// I am planning to switch to a persistent volume, but am
+	// leaving this in place as a temporary workaround in the short
+	// term.
+	os.RemoveAll(
+		filepath.Join(
+			"/tmp",
+			"drone",
+			spec.Metadata.Namespace,
+		),
+	)
+
 	// deleting the namespace should destroy all secrets,
 	// volumes, configuration files and more.
 	return e.client.CoreV1().Namespaces().Delete(
