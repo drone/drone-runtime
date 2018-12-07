@@ -242,7 +242,8 @@ func toPod(spec *engine.Spec, step *engine.Step) *v1.Pod {
 			Labels:    step.Metadata.Labels,
 		},
 		Spec: v1.PodSpec{
-			RestartPolicy: v1.RestartPolicyNever,
+			AutomountServiceAccountToken: boolptr(false),
+			RestartPolicy:                v1.RestartPolicyNever,
 			Containers: []v1.Container{{
 				Name:            step.Metadata.UID,
 				Image:           step.Docker.Image,
@@ -297,4 +298,12 @@ func toService(spec *engine.Spec, step *engine.Step) *v1.Service {
 
 func toDNS(i string) string {
 	return strings.Replace(i, "_", "-", -1)
+}
+
+func boolptr(v bool) *bool {
+	return &v
+}
+
+func stringptr(v string) *string {
+	return &v
 }
