@@ -188,6 +188,12 @@
   version = "1.0.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/natessilva/dag"
+  packages = ["."]
+  revision = "7194b8dcc5c4ac1f9a86465b7da3dc2f5765c1bf"
+
+[[projects]]
   name = "github.com/opencontainers/go-digest"
   packages = ["."]
   revision = "279bed98673dd5bef374d3b6e4b09e2af76183bf"
@@ -559,6 +565,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "059ec2114287d355951189e9fdbc6cc00cc176287e9b693e0e40253c0fc4bbd5"
+  inputs-digest = "826a38bb75868d939208d5378494cc45c03fbf865494ef1fd7c65d9ad55e72d1"
   solver-name = "gps-cdcl"
   solver-version = 1
