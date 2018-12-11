@@ -59,7 +59,7 @@ func Print(spec *engine.Spec) string {
 
 	for _, step := range spec.Steps {
 		buf.WriteString(documentBegin)
-		res := toPod(spec, step)
+		res := toPod(spec, step, false)
 		res.Namespace = spec.Metadata.Namespace
 		res.Kind = "Pod"
 		raw, _ := yaml.Marshal(res)

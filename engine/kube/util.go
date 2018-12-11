@@ -129,7 +129,7 @@ func toConfigMounts(spec *engine.Spec, step *engine.Step) []v1.VolumeMount {
 	return to
 }
 
-func toVolumes(spec *engine.Spec, step *engine.Step) []v1.Volume {
+func toVolumes(spec *engine.Spec, step *engine.Step, usePVC bool) []v1.Volume {
 	var to []v1.Volume
 	for _, mount := range step.Volumes {
 		vol, ok := engine.LookupVolume(spec, mount.Name)
@@ -139,9 +139,15 @@ func toVolumes(spec *engine.Spec, step *engine.Step) []v1.Volume {
 		volume := v1.Volume{Name: vol.Metadata.UID}
 		source := v1.HostPathDirectoryOrCreate
 		if vol.HostPath != nil {
-			volume.HostPath = &v1.HostPathVolumeSource{
-				Path: vol.HostPath.Path,
-				Type: &source,
+			if usePVC {
+				volume.PersistentVolumeClaim = &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: spec.Metadata.Namespace,
+				}
+			} else {
+				volume.HostPath = &v1.HostPathVolumeSource{
+					Path: vol.HostPath.Path,
+					Type: &source,
+				}
 			}
 		}
 		if vol.EmptyDir != nil {
@@ -152,9 +158,15 @@ func toVolumes(spec *engine.Spec, step *engine.Step) []v1.Volume {
 			// directory on the host machine that can be shared
 			// between pods. This means we are responsible for deleting
 			// these directories.
-			volume.HostPath = &v1.HostPathVolumeSource{
-				Path: filepath.Join("/tmp", "drone", spec.Metadata.Namespace, vol.Metadata.Namespace),
-				Type: &source,
+			if usePVC {
+				volume.PersistentVolumeClaim = &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: spec.Metadata.Namespace,
+				}
+			} else {
+				volume.HostPath = &v1.HostPathVolumeSource{
+					Path: filepath.Join("/tmp", "drone", spec.Metadata.Namespace, vol.Metadata.Namespace),
+					Type: &source,
+				}
 			}
 		}
 		to = append(to, volume)
@@ -226,9 +238,9 @@ func toResources(step *engine.Step) v1.ResourceRequirements {
 
 // helper function returns a kubernetes pod for the
 // given step and specification.
-func toPod(spec *engine.Spec, step *engine.Step) *v1.Pod {
+func toPod(spec *engine.Spec, step *engine.Step, usePVC bool) *v1.Pod {
 	var volumes []v1.Volume
-	volumes = append(volumes, toVolumes(spec, step)...)
+	volumes = append(volumes, toVolumes(spec, step, usePVC)...)
 	volumes = append(volumes, toConfigVolumes(spec, step)...)
 
 	var mounts []v1.VolumeMount

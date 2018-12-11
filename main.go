@@ -27,6 +27,7 @@ func main() {
 	u := flag.String("kube-url", "", "")
 	n := flag.String("kube-node", "", "")
 	d := flag.Bool("kube-debug", false, "")
+	s := flag.String("kube-storageclass", "", "")
 	t := flag.Duration("timeout", time.Hour, "")
 	h := flag.Bool("help", false, "")
 
@@ -69,7 +70,7 @@ func main() {
 			log.Fatalln(err)
 		}
 	} else {
-		engine, err = kube.NewFile(*u, *k, *n)
+		engine, err = kube.NewFile(*u, *k, *n, *s)
 		if err != nil {
 			log.Fatalln(err)
 		}

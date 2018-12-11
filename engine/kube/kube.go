@@ -21,13 +21,14 @@ import (
 )
 
 type kubeEngine struct {
-	client *kubernetes.Clientset
-	node   string
+	client       *kubernetes.Clientset
+	node         string
+	storageClass string
 }
 
 // NewFile returns a new Kubernetes engine from a
 // Kubernetes configuration file (~/.kube/config).
-func NewFile(url, path, node string) (engine.Engine, error) {
+func NewFile(url, path, node string, storageClass string) (engine.Engine, error) {
 	config, err := clientcmd.BuildConfigFromFlags(url, path)
 	if err != nil {
 		return nil, err
@@ -36,7 +37,7 @@ func NewFile(url, path, node string) (engine.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kubeEngine{client: client, node: node}, nil
+	return &kubeEngine{client: client, node: node, storageClass: storageClass}, nil
 }
 
 func (e *kubeEngine) Setup(ctx context.Context, spec *engine.Spec) error {
@@ -105,11 +106,13 @@ func (e *kubeEngine) Setup(ctx context.Context, spec *engine.Spec) error {
 	// 	return err
 	// }
 
-	// pvc := toPersistentVolumeClaim(spec.Metadata.Namespace, spec.Metadata.Namespace)
-	// _, err = e.client.CoreV1().PersistentVolumeClaims(spec.Metadata.Namespace).Create(pvc)
-	// if err != nil {
-	// 	return err
-	// }
+	if e.storageClass != "" {
+		pvc := toPersistentVolumeClaim(spec.Metadata.Namespace, spec.Metadata.Namespace, e.storageClass)
+		_, err = e.client.CoreV1().PersistentVolumeClaims(spec.Metadata.Namespace).Create(pvc)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -120,7 +123,11 @@ func (e *kubeEngine) Create(_ context.Context, _ *engine.Spec, _ *engine.Step) e
 }
 
 func (e *kubeEngine) Start(ctx context.Context, spec *engine.Spec, step *engine.Step) error {
-	pod := toPod(spec, step)
+	usePVC := false
+	if e.storageClass != "" {
+		usePVC = true
+	}
+	pod := toPod(spec, step, usePVC)
 	if len(step.Docker.Ports) != 0 {
 		service := toService(spec, step)
 		_, err := e.client.CoreV1().Services(spec.Metadata.Namespace).Create(service)

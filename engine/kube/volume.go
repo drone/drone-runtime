@@ -41,8 +41,7 @@ func toPersistentVolume(node, namespace, name, path string) *v1.PersistentVolume
 	}
 }
 
-func toPersistentVolumeClaim(namespace, name string) *v1.PersistentVolumeClaim {
-	localStorageClass := "local-storage"
+func toPersistentVolumeClaim(namespace, name string, storageClassName string) *v1.PersistentVolumeClaim {
 
 	return &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -51,7 +50,7 @@ func toPersistentVolumeClaim(namespace, name string) *v1.PersistentVolumeClaim {
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes:      []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-			StorageClassName: &localStorageClass,
+			StorageClassName: &storageClassName,
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceStorage: defaultVolumeSize,
