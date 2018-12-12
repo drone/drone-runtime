@@ -203,23 +203,27 @@ func toNamespace(spec *engine.Spec) *v1.Namespace {
 
 func toResources(step *engine.Step) v1.ResourceRequirements {
 	var resources v1.ResourceRequirements
-	// TODO (bradrydzewski) createing resource limits is
-	// currently disabled pending a better understanding
-	// of how this works, and the correct format value for
-	// bytes (in memory) as an integer.
-	if true {
-		return resources
-	}
-
 	if step.Resources != nil && step.Resources.Limits != nil {
 		resources.Limits = v1.ResourceList{}
-		resources.Limits[v1.ResourceMemory] = *resource.NewQuantity(
-			step.Resources.Limits.Memory, resource.BinarySI)
+		if step.Resources.Limits.Memory > int64(0) {
+			resources.Limits[v1.ResourceMemory] = *resource.NewQuantity(
+				step.Resources.Limits.Memory, resource.BinarySI)
+		}
+		if step.Resources.Limits.CPU > int64(0) {
+			resources.Limits[v1.ResourceCPU] = *resource.NewMilliQuantity(
+				step.Resources.Limits.CPU, resource.DecimalSI)
+		}
 	}
 	if step.Resources != nil && step.Resources.Requests != nil {
 		resources.Requests = v1.ResourceList{}
-		resources.Requests[v1.ResourceMemory] = *resource.NewQuantity(
-			step.Resources.Requests.Memory, resource.BinarySI)
+		if step.Resources.Requests.Memory > int64(0) {
+			resources.Requests[v1.ResourceMemory] = *resource.NewQuantity(
+				step.Resources.Requests.Memory, resource.BinarySI)
+		}
+		if step.Resources.Requests.CPU > int64(0) {
+			resources.Requests[v1.ResourceCPU] = *resource.NewMilliQuantity(
+				step.Resources.Requests.CPU, resource.DecimalSI)
+		}
 	}
 	return resources
 }
