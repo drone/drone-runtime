@@ -1,6 +1,7 @@
 package kube
 
 import (
+	"log"
 	"path"
 	"path/filepath"
 	"strings"
@@ -203,23 +204,37 @@ func toNamespace(spec *engine.Spec) *v1.Namespace {
 
 func toResources(step *engine.Step) v1.ResourceRequirements {
 	var resources v1.ResourceRequirements
-	// TODO (bradrydzewski) createing resource limits is
-	// currently disabled pending a better understanding
-	// of how this works, and the correct format value for
-	// bytes (in memory) as an integer.
-	if true {
-		return resources
-	}
-
 	if step.Resources != nil && step.Resources.Limits != nil {
 		resources.Limits = v1.ResourceList{}
-		resources.Limits[v1.ResourceMemory] = *resource.NewQuantity(
-			step.Resources.Limits.Memory, resource.BinarySI)
+		if step.Resources.Limits.Memory > int64(0) {
+			resources.Limits[v1.ResourceMemory] = *resource.NewQuantity(
+				step.Resources.Limits.Memory, resource.BinarySI)
+		}
+		if step.Resources.Limits.CPU != "" {
+			cpu, err := resource.ParseQuantity(step.Resources.Limits.CPU)
+			if err != nil {
+				// TODO: how we should print this error?
+				log.Println(err)
+			} else {
+				resources.Limits[v1.ResourceCPU] = cpu
+			}
+		}
 	}
 	if step.Resources != nil && step.Resources.Requests != nil {
 		resources.Requests = v1.ResourceList{}
-		resources.Requests[v1.ResourceMemory] = *resource.NewQuantity(
-			step.Resources.Requests.Memory, resource.BinarySI)
+		if step.Resources.Requests.Memory > int64(0) {
+			resources.Requests[v1.ResourceMemory] = *resource.NewQuantity(
+				step.Resources.Requests.Memory, resource.BinarySI)
+		}
+		if step.Resources.Requests.CPU != "" {
+			cpu, err := resource.ParseQuantity(step.Resources.Requests.CPU)
+			if err != nil {
+				// TODO: how we should print this error?
+				log.Println(err)
+			} else {
+				resources.Requests[v1.ResourceCPU] = cpu
+			}
+		}
 	}
 	return resources
 }
