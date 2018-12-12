@@ -1,7 +1,6 @@
 package kube
 
 import (
-	"log"
 	"path"
 	"path/filepath"
 	"strings"
@@ -210,14 +209,9 @@ func toResources(step *engine.Step) v1.ResourceRequirements {
 			resources.Limits[v1.ResourceMemory] = *resource.NewQuantity(
 				step.Resources.Limits.Memory, resource.BinarySI)
 		}
-		if step.Resources.Limits.CPU != "" {
-			cpu, err := resource.ParseQuantity(step.Resources.Limits.CPU)
-			if err != nil {
-				// TODO: how we should print this error?
-				log.Println(err)
-			} else {
-				resources.Limits[v1.ResourceCPU] = cpu
-			}
+		if step.Resources.Limits.CPU > int64(0) {
+			resources.Limits[v1.ResourceCPU] = *resource.NewMilliQuantity(
+				step.Resources.Limits.CPU, resource.DecimalSI)
 		}
 	}
 	if step.Resources != nil && step.Resources.Requests != nil {
@@ -226,14 +220,9 @@ func toResources(step *engine.Step) v1.ResourceRequirements {
 			resources.Requests[v1.ResourceMemory] = *resource.NewQuantity(
 				step.Resources.Requests.Memory, resource.BinarySI)
 		}
-		if step.Resources.Requests.CPU != "" {
-			cpu, err := resource.ParseQuantity(step.Resources.Requests.CPU)
-			if err != nil {
-				// TODO: how we should print this error?
-				log.Println(err)
-			} else {
-				resources.Requests[v1.ResourceCPU] = cpu
-			}
+		if step.Resources.Requests.CPU > int64(0) {
+			resources.Requests[v1.ResourceCPU] = *resource.NewMilliQuantity(
+				step.Resources.Requests.CPU, resource.DecimalSI)
 		}
 	}
 	return resources

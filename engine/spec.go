@@ -141,8 +141,8 @@ type (
 	// ResourceObject describes compute resource
 	// requirements.
 	ResourceObject struct {
-		CPU    string `json:"cpu,omitempty"`
-		Memory int64  `json:"memory,omitempty"`
+		CPU    int64 `json:"cpu,omitempty"`
+		Memory int64 `json:"memory,omitempty"`
 	}
 
 	// Secret represents a secret variable.
