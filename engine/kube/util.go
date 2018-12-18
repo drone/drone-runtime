@@ -122,7 +122,10 @@ func toConfigMounts(spec *engine.Spec, step *engine.Step) []v1.VolumeMount {
 		}
 		volume := v1.VolumeMount{
 			Name:      file.Metadata.UID,
-			MountPath: path.Dir(mount.Path), // mount the config map here, using the base path
+			// Mount configMap as subPath only to prevent read only access to whole directory
+			MountPath: mount.Path, 
+			// SubPath points towards the Path inside the ConfigMap
+			SubPath: path.Base(mount.Path),
 		}
 		to = append(to, volume)
 	}
