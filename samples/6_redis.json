@@ -1,0 +1,39 @@
+{
+	"metadata": {
+		"uid": "uid_GPzK101Yka7Hf9JD",
+		"namespace": "ns_cwOiiTAoLeYVHWVv",
+		"name": "redis_test"
+	},
+	"secrets": null,
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_V3UjFaWH0IV9UDbI",
+				"namespace": "ns_cwOiiTAoLeYVHWVv",
+				"name": "redis"
+			},
+			"detach": true,
+			"docker": {
+				"image": "redis:4-alpine"
+			}
+		},
+		{
+			"metadata": {
+				"uid": "uid_gkZrU925ZbAWEDoy",
+				"namespace": "ns_cwOiiTAoLeYVHWVv",
+				"name": "ping"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -x; set -e; sleep 5; redis-cli -h redis ping; redis-cli -h redis set HELLO hello; redis-cli -h redis get HELLO"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "redis:4-alpine"
+			}
+		}
+	],
+	"docker": {}
+}

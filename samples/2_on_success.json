@@ -1,0 +1,48 @@
+{
+	"metadata": {
+		"uid": "uid_W6kaKXlwtVX4gV6L",
+		"namespace": "ns_gyOk2PMIgw3xJfPn",
+		"name": "test_on_success",
+		"labels": null
+	},
+	"secrets": null,
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_IGDaqvs2upuEPY7E",
+				"namespace": "ns_gyOk2PMIgw3xJfPn",
+				"name": "step_0"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -e; set -x; echo this step will exit the pipeline; exit 1"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "alpine:3.6"
+			},
+			"run_policy": "on-success"
+		},
+		{
+			"metadata": {
+				"uid": "uid_vOqlrhPQZ5kv45iF",
+				"namespace": "ns_gyOk2PMIgw3xJfPn",
+				"name": "step_1"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -e; set -x; echo this step must not execute"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "alpine:3.6"
+			},
+			"run_policy": "on-success"
+		}
+	],
+	"docker": {}
+}

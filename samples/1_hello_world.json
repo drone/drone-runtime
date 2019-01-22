@@ -1,0 +1,41 @@
+{
+	"metadata": {
+		"uid": "uid_AOTCIPBf3XdTFs2j",
+		"namespace": "ns_JVzesGoyteu5koZK",
+		"name": "test_hello_world"
+	},
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_8a7IJsL9zSJCCchd",
+				"namespace": "ns_JVzesGoyteu5koZK",
+				"name": "greetings"
+			},
+			"docker": {
+				"args": [
+					"/usr/local/bin/droneinit"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "alpine:3.6",
+				"pull_policy": "default"
+			},
+			"files": [
+				{
+					"name": "greetings_script",
+					"path": "/usr/local/bin/droneinit",
+					"mode": 511
+				}
+			],
+			"run_policy": "on-success"
+		}
+	],
+	"files": [
+		{
+			"Name": "greetings_script",
+			"Data": "ZWNobyBoZWxsbyB3b3JsZAo="
+		}
+	],
+	"docker": {}
+}

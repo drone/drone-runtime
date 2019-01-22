@@ -1,0 +1,30 @@
+{
+	"metadata": {
+		"uid": "uid_AOTCIPBf3XdTFs2j",
+		"namespace": "ns_nvPNAIL16QyAMVtF",
+		"name": "auth_test"
+	},
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_8a7IJsL9zSJCCchd",
+				"namespace": "ns_nvPNAIL16QyAMVtF",
+				"name": "greetings"
+			},
+			"docker": {
+				"args": [
+                    "-c",
+                    "echo hello world"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "bradrydzewski/private-test:latest",
+				"pull_policy": "default"
+			},
+			"run_policy": "on-success"
+		}
+	],
+	"files": [],
+	"docker": {}
+}

@@ -1,0 +1,29 @@
+{
+	"metadata": {
+		"uid": "uid_W6kaKXlwtVX4gV6L",
+		"namespace": "ns_gyOk2PMIgw3xJfPn",
+		"name": "working_dir_test"
+	},
+	"secrets": null,
+	"steps": [
+		{
+			"metadata": {
+				"uid": "uid_vOqlrhPQZ5kv45iF",
+				"namespace": "ns_gyOk2PMIgw3xJfPn",
+				"name": "step_0"
+			},
+			"docker": {
+				"args": [
+					"-c",
+					"set -e;\nset -x;\npwd"
+				],
+				"command": [
+					"/bin/sh"
+				],
+				"image": "alpine:3.6"
+            },
+            "working_dir": "/root/src"
+		}
+	],
+	"docker": {}
+}
