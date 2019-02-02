@@ -137,11 +137,28 @@ func toVolumes(spec *engine.Spec, step *engine.Step) []v1.Volume {
 			continue
 		}
 		volume := v1.Volume{Name: vol.Metadata.UID}
-		source := v1.HostPathDirectoryOrCreate
+
+		var hostPathType v1.HostPathType
+		switch vol.HostPath.Type {
+		case engine.HostPathDirectoryOrCreate:
+			hostPathType = v1.HostPathDirectoryOrCreate
+		case engine.HostPathDirectory:
+			hostPathType = v1.HostPathDirectory
+		case engine.HostPathFileOrCreate:
+			hostPathType = v1.HostPathFileOrCreate
+		case engine.HostPathFile:
+			hostPathType = v1.HostPathFile
+		case engine.HostPathSocket:
+			hostPathType = v1.HostPathSocket
+		case engine.HostPathCharDev:
+			hostPathType = v1.HostPathCharDev
+		case engine.HostPathBlockDev:
+			hostPathType = v1.HostPathBlockDev
+		}
 		if vol.HostPath != nil {
 			volume.HostPath = &v1.HostPathVolumeSource{
 				Path: vol.HostPath.Path,
-				Type: &source,
+				Type: &hostPathType,
 			}
 		}
 		if vol.EmptyDir != nil {
@@ -154,7 +171,7 @@ func toVolumes(spec *engine.Spec, step *engine.Step) []v1.Volume {
 			// these directories.
 			volume.HostPath = &v1.HostPathVolumeSource{
 				Path: filepath.Join("/tmp", "drone", spec.Metadata.Namespace, vol.Metadata.UID),
-				Type: &source,
+				Type: &hostPathType,
 			}
 		}
 		to = append(to, volume)

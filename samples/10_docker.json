@@ -1,15 +1,15 @@
 {
 	"metadata": {
 		"uid": "uid_GPzK101Yka7Hf9JD",
-		"namespace": "ns_cwOiiTAoLeYVHWVv",
+		"namespace": "ns-2iwm3tmsu347isp30884hkdm5040rcwz",
 		"name": "docker_test"
 	},
 	"secrets": null,
 	"steps": [
 		{
 			"metadata": {
-				"uid": "uid_gkZrU925ZbAWEDoy",
-				"namespace": "ns_cwOiiTAoLeYVHWVv",
+				"uid": "uid-2iwm3tmsu347isp30884hkdm5040rcwd",
+				"namespace": "ns-2iwm3tmsu347isp30884hkdm5040rcwz",
 				"name": "ping"
 			},
 			"docker": {
@@ -34,12 +34,13 @@
         "volumes": [
             {
                 "metadata": {
-                    "uid": "uid_NttbpIbQLKCyG8uI",
-                    "namespace": "ns_cwOiiTAoLeYVHWVv",
+                    "uid": "uid-29sjd7tmsu347isp30884hkdm5040r",
+                    "namespace": "ns-2iwm3tmsu347isp30884hkdm5040rcwz",
                     "name": "dockersock"
                 },
                 "host": {
-					"path": "/var/run/docker.sock"
+					"path": "/var/run/docker.sock",
+					"type": "socket"
 				}
             }
         ]
