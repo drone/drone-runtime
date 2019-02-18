@@ -1,14 +1,16 @@
-workspace:
-  base: /go
-  path: src/github.com/drone/drone-runtime
+---
+kind: pipeline
+name: default
 
-pipeline:
-  deps:
-    image: golang:1.11
-    commands:
-      - go get -u github.com/golang/dep/cmd/dep
-      - dep ensure
-  test:
-    image: golang:1.11
-    commands:
-      - go test -v --cover ./...
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: test
+  image: golang:1.11
+  commands:
+  - go test -v --cover ./...
+
+...
+
