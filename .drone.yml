@@ -1,16 +1,28 @@
 ---
 kind: pipeline
-name: default
+name: testing
 
 platform:
   os: linux
   arch: amd64
 
 steps:
+- name: vet
+  image: golang:1.11
+  commands:
+  - go vet ./...
+  volumes:
+  - name: gopath
+    path: /go
+
 - name: test
   image: golang:1.11
   commands:
-  - go test -v --cover ./...
+  - go test -cover ./...
+  volumes:
+  - name: gopath
+    path: /go
 
-...
-
+volumes:
+- name: gopath
+  temp: {}
