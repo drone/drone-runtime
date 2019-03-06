@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"strconv"
 
 	"github.com/drone/drone-runtime/engine"
 
@@ -291,6 +292,7 @@ func toService(spec *engine.Spec, step *engine.Step) *v1.Service {
 			target = source
 		}
 		ports = append(ports, v1.ServicePort{
+			Name: strconv.Itoa(source),
 			Port: int32(source),
 			TargetPort: intstr.IntOrString{
 				IntVal: int32(target),
