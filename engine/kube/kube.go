@@ -25,13 +25,14 @@ import (
 )
 
 type kubeEngine struct {
-	client *kubernetes.Clientset
-	node   string
+	client    *kubernetes.Clientset
+	node      string
+	namespace string
 }
 
 // NewFile returns a new Kubernetes engine from a
 // Kubernetes configuration file (~/.kube/config).
-func NewFile(url, path, node string) (engine.Engine, error) {
+func NewFile(url, path, node, namespace string) (engine.Engine, error) {
 	config, err := clientcmd.BuildConfigFromFlags(url, path)
 	if err != nil {
 		return nil, err
@@ -40,18 +41,25 @@ func NewFile(url, path, node string) (engine.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kubeEngine{client: client, node: node}, nil
+	return &kubeEngine{client: client, node: node, namespace: namespace}, nil
 }
 
 func (e *kubeEngine) Setup(ctx context.Context, spec *engine.Spec) error {
+	if e.namespace != "" {
+		spec.Metadata.Namespace = e.namespace
+	}
+
 	ns := toNamespace(spec)
 
-	// create the project namespace. all pods and
-	// containers are created within the namespace, and
-	// are removed when the pipeline execution completes.
-	_, err := e.client.CoreV1().Namespaces().Create(ns)
-	if err != nil {
-		return err
+	// Create namespace if no default one given
+	if e.namespace == "" {
+		// create the project namespace. all pods and
+		// containers are created within the namespace, and
+		// are removed when the pipeline execution completes.
+		_, err := e.client.CoreV1().Namespaces().Create(ns)
+		if err != nil {
+			return err
+		}
 	}
 
 	// create all secrets
@@ -124,6 +132,11 @@ func (e *kubeEngine) Create(_ context.Context, _ *engine.Spec, _ *engine.Step) e
 }
 
 func (e *kubeEngine) Start(ctx context.Context, spec *engine.Spec, step *engine.Step) error {
+	if e.namespace != "" {
+		spec.Metadata.Namespace = e.namespace
+		step.Metadata.Namespace = e.namespace
+	}
+
 	pod := toPod(spec, step)
 	if len(step.Docker.Ports) != 0 {
 		service := toService(spec, step)
@@ -268,10 +281,14 @@ func (e *kubeEngine) Destroy(ctx context.Context, spec *engine.Spec) error {
 		),
 	)
 
-	// deleting the namespace should destroy all secrets,
-	// volumes, configuration files and more.
-	return e.client.CoreV1().Namespaces().Delete(
-		spec.Metadata.Namespace,
-		&metav1.DeleteOptions{},
-	)
+	if e.namespace == "" {
+		// deleting the namespace should destroy all secrets,
+		// volumes, configuration files and more.
+		return e.client.CoreV1().Namespaces().Delete(
+			spec.Metadata.Namespace,
+			&metav1.DeleteOptions{},
+		)
+	}
+
+	return nil
 }
