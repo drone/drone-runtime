@@ -20,6 +20,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker/auth"
@@ -38,6 +39,34 @@ type dockerEngine struct {
 // NewEnv returns a new Engine from the environment.
 func NewEnv() (engine.Engine, error) {
 	cli, err := docker.NewEnvClient()
+	if err != nil {
+		return nil, err
+	}
+	cli.Ping()
+	return New(cli), nil
+}
+
+// NewEnvBackoff returns a new Engine from the environment. If
+// the connection fails or cannot be reached, the system attempts
+// to reconnect N times before returning an error.
+func NewEnvBackoff(retries int, wait time.Duration) (engine.Engine, error) {
+	var cli *docker.Client
+	var err error
+	for i := 0; i < retries; i++ {
+		if i > 0 {
+			time.Sleep(wait)
+		}
+		cli, err = docker.NewEnvClient()
+		if err == nil {
+			continue
+		}
+		_, err = cli.Ping(context.Background())
+		if err != nil {
+			cli.Close()
+			continue
+		}
+		break
+	}
 	if err != nil {
 		return nil, err
 	}
