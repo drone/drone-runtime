@@ -42,7 +42,6 @@ func NewEnv() (engine.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	cli.Ping()
 	return New(cli), nil
 }
 
