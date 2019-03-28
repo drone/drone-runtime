@@ -7,12 +7,14 @@ package kube
 import (
 	"path"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/drone/drone-runtime/engine"
+	"github.com/drone/drone/cmd/drone-controller/config"
+	"github.com/sirupsen/logrus"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -236,6 +238,13 @@ func toResources(step *engine.Step) v1.ResourceRequirements {
 // helper function returns a kubernetes pod for the
 // given step and specification.
 func toPod(spec *engine.Spec, step *engine.Step) *v1.Pod {
+	config, err := config.Environ()
+
+	if err != nil {
+		logrus.WithError(err).Fatalln("invalid configuration")
+
+	}
+
 	var volumes []v1.Volume
 	volumes = append(volumes, toVolumes(spec, step)...)
 	volumes = append(volumes, toConfigVolumes(spec, step)...)
@@ -253,9 +262,10 @@ func toPod(spec *engine.Spec, step *engine.Step) *v1.Pod {
 
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      step.Metadata.UID,
-			Namespace: step.Metadata.Namespace,
-			Labels:    step.Metadata.Labels,
+			Name:        step.Metadata.UID,
+			Namespace:   step.Metadata.Namespace,
+			Labels:      step.Metadata.Labels,
+			Annotations: config.Runner.Annotations,
 		},
 		Spec: v1.PodSpec{
 			AutomountServiceAccountToken: boolptr(false),
