@@ -73,7 +73,9 @@ func main() {
 			log.Fatalln(err)
 		}
 	} else {
-		engine, err = kube.NewFile(*u, *k, *n)
+		// send Empty annotatoins to NewFile
+		a := map[string]string{}
+		engine, err = kube.NewFile(*u, *k, *n, a)
 		if err != nil {
 			log.Fatalln(err)
 		}
