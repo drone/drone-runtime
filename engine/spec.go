@@ -40,6 +40,7 @@ type (
 	// Step defines a pipeline step.
 	Step struct {
 		Metadata     Metadata          `json:"metadata,omitempty"`
+		Annotations  map[string]string `json:annotations,omitempty"`
 		Detach       bool              `json:"detach,omitempty"`
 		DependsOn    []string          `json:"depends_on,omitempty"`
 		Devices      []*VolumeDevice   `json:"devices,omitempty"`
