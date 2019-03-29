@@ -14,7 +14,7 @@ import (
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker/auth"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
@@ -25,13 +25,14 @@ import (
 )
 
 type kubeEngine struct {
-	client *kubernetes.Clientset
-	node   string
+	client      *kubernetes.Clientset
+	node        string
+	annotations map[string]string
 }
 
 // NewFile returns a new Kubernetes engine from a
 // Kubernetes configuration file (~/.kube/config).
-func NewFile(url, path, node string) (engine.Engine, error) {
+func NewFile(url, path, node string, annotations map[string]string) (engine.Engine, error) {
 	config, err := clientcmd.BuildConfigFromFlags(url, path)
 	if err != nil {
 		return nil, err
@@ -40,7 +41,7 @@ func NewFile(url, path, node string) (engine.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kubeEngine{client: client, node: node}, nil
+	return &kubeEngine{client: client, node: node, annotations: annotations}, nil
 }
 
 func (e *kubeEngine) Setup(ctx context.Context, spec *engine.Spec) error {
@@ -131,6 +132,10 @@ func (e *kubeEngine) Start(ctx context.Context, spec *engine.Spec, step *engine.
 		if err != nil {
 			return err
 		}
+	}
+
+	if len(e.annotations) != 0 {
+		pod.ObjectMeta.Annotations = e.annotations
 	}
 
 	if e.node != "" {
