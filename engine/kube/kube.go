@@ -232,7 +232,8 @@ func (e *kubeEngine) Tail(ctx context.Context, spec *engine.Spec, step *engine.S
 	}
 
 	opts := &v1.PodLogOptions{
-		Follow: true,
+		Container: podName,
+		Follow:    true,
 	}
 
 	return e.client.CoreV1().RESTClient().Get().
