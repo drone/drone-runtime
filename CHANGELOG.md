@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2019-04-10
+### Added
+- Optionally set the Docker container User, by [@bradrydzewski](https://github.com/bradrydzewski).
+
 ## [1.0.4] - 2019-03-27
 ### Added
 
