@@ -6,11 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2019-04-13
+### Added
+- Function to Ping the Docker Daemon to test connectivity, by [@bradrydzewski](https://github.com/bradrydzewski).
+
 ## [1.0.5] - 2019-04-10
 ### Added
 - Optionally set the Docker container User, by [@bradrydzewski](https://github.com/bradrydzewski).
-
-## [1.0.4] - 2019-03-27
-### Added
-
-- Ping Docker Client and retry with backoff before creating engine, by [@bradrydzewski](https://github.com/bradrydzewski).
