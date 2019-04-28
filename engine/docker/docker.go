@@ -323,6 +323,11 @@ func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine
 	if !ok {
 		return "", fmt.Errorf("host volume is not found")
 	}
+	if len(spec.Steps) == 0 {
+		return "", fmt.Errorf(
+			"there is no step in spec: namespace: %s, labels: %v",
+			spec.Metadata.Name, spec.Metadata.Labels)
+	}
 	step := spec.Steps[0]
 	var mount *engine.VolumeMount
 	for _, m := range step.Volumes {
