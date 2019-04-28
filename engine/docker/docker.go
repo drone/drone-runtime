@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"math/big"
 	"math/rand"
@@ -304,12 +305,17 @@ func (e *dockerEngine) copyHostToContainer(ctx context.Context, spec *engine.Spe
 	if err != nil {
 		return errors.Wrap(err, "failed to create a container to copy host files to volume")
 	}
+	defer func() {
+		// destroy the container
+		if err := e.destroyCopyHostContainer(ctx, copyUID); err != nil {
+			log.Println("failed to remove a container", err)
+		}
+	}()
 	// create and copy a tar file to the container
 	if err := e.createTarAndCopyToContainer(ctx, copyUID); err != nil {
 		return errors.Wrap(err, "failed to create and copy a tar file to volume")
 	}
-	// destroy the container
-	return e.destroyCopyHostContainer(ctx, copyUID)
+	return nil
 }
 
 func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine.Spec) (string, error) {
