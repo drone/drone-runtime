@@ -334,8 +334,7 @@ func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine
 
 	_, err = e.client.ContainerCreate(ctx,
 		&container.Config{
-			Image:   "busybox",
-			Volumes: nil,
+			Image: "busybox",
 		},
 		&container.HostConfig{
 			Binds: []string{fmt.Sprintf("%s:%s", volume.Metadata.UID, "/data")},
