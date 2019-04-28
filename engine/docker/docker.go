@@ -17,9 +17,12 @@ package docker
 import (
 	"bytes"
 	"context"
+	crand "crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
+	"math/big"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -324,7 +327,15 @@ func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine
 	if mount == nil {
 		return "", fmt.Errorf("host volume mount is not found")
 	}
-	uid := fmt.Sprintf("copy_%d", rand.Int())
+
+	// create the random container name
+	seed, err := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
+	if err != nil {
+		return errors.Wrap(err, "failed to create a seed")
+	}
+	rand.Seed(seed.Int64())
+	uid := fmt.Sprintf("copy_%d", rand.Int63())
+
 	_, err := e.client.ContainerCreate(ctx,
 		&container.Config{
 			Image:   "busybox",
