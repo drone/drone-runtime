@@ -355,11 +355,23 @@ func (e *dockerEngine) createTarAndCopyToContainer(ctx context.Context, uid stri
 	}
 	defer os.RemoveAll(dir)
 	tarPath := filepath.Join(dir, "drone.tar")
-	wd, err := os.Getwd()
+
+	// get file names on the current directory
+	f, err := os.Open(".")
 	if err != nil {
-		return errors.Wrap(err, "failed to get the current directory path")
+		return errors.Wrap(err, "failed to open the current directory")
 	}
-	if err := archiver.Archive([]string{wd}, tarPath); err != nil {
+	defer f.Close()
+	infos, err := f.Readdir(0)
+	if err != nil {
+		return errors.Wrap(err, "failed to get file infos on the current directory")
+	}
+	names := make([]string, len(infos))
+	for i, info := range infos {
+		names[i] = info.Name()
+	}
+
+	if err := archiver.Archive(names, tarPath); err != nil {
 		return errors.Wrap(err, "failed to create a tar file")
 	}
 
@@ -370,7 +382,7 @@ func (e *dockerEngine) createTarAndCopyToContainer(ctx context.Context, uid stri
 	}
 	defer tar.Close()
 
-	return e.client.CopyToContainer(ctx, uid, "/", tar, copyOpts)
+	return e.client.CopyToContainer(ctx, uid, "/data", tar, copyOpts)
 }
 
 func (e *dockerEngine) destroyCopyHostContainer(ctx context.Context, uid string) error {
