@@ -365,7 +365,7 @@ func (e *dockerEngine) createTarAndCopyToContainer(ctx context.Context, uid stri
 		return errors.Wrap(err, "failed to create a temporary directory")
 	}
 	defer os.RemoveAll(dir)
-	tarPath := filepath.Join(dir, "drone")
+	tarPath := filepath.Join(dir, "drone.tar")
 	wd, err := os.Getwd()
 	if err != nil {
 		return errors.Wrap(err, "failed to get the current directory path")
