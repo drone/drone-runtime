@@ -337,12 +337,12 @@ func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine
 	// create the random container name
 	seed, err := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
 	if err != nil {
-		return errors.Wrap(err, "failed to create a seed")
+		return "", errors.Wrap(err, "failed to create a seed")
 	}
 	rand.Seed(seed.Int64())
 	uid := fmt.Sprintf("copy_%d", rand.Int63())
 
-	_, err := e.client.ContainerCreate(ctx,
+	_, err = e.client.ContainerCreate(ctx,
 		&container.Config{
 			Image:   "busybox",
 			Volumes: nil,
