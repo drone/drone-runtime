@@ -323,21 +323,6 @@ func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine
 	if !ok {
 		return "", fmt.Errorf("host volume is not found")
 	}
-	if len(spec.Steps) == 0 {
-		return "", fmt.Errorf(
-			"there is no step in spec: namespace: %s, labels: %v",
-			spec.Metadata.Name, spec.Metadata.Labels)
-	}
-	step := spec.Steps[0]
-	var mount *engine.VolumeMount
-	for _, m := range step.Volumes {
-		if m.Name == "host" {
-			mount = m
-		}
-	}
-	if mount == nil {
-		return "", fmt.Errorf("host volume mount is not found")
-	}
 
 	// create the random container name
 	seed, err := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
@@ -353,7 +338,7 @@ func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine
 			Volumes: nil,
 		},
 		&container.HostConfig{
-			Binds: []string{fmt.Sprintf("%s:%s", volume.Metadata.UID, mount.Path)},
+			Binds: []string{fmt.Sprintf("%s:%s", volume.Metadata.UID, "/data")},
 		},
 		&network.NetworkingConfig{},
 		uid,
