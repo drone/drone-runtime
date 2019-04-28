@@ -385,13 +385,9 @@ func (e *dockerEngine) createTarAndCopyToContainer(ctx context.Context, uid stri
 }
 
 func (e *dockerEngine) destroyCopyHostContainer(ctx context.Context, uid string) error {
-	removeOpts := types.ContainerRemoveOptions{
+	return e.client.ContainerRemove(ctx, uid, types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveLinks:   false,
 		RemoveVolumes: true,
-	}
-
-	e.client.ContainerKill(ctx, uid, "9")
-	e.client.ContainerRemove(ctx, uid, removeOpts)
-	return nil
+	})
 }
