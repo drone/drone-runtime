@@ -21,13 +21,18 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
+	"os"
+	"path/filepath"
 
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker/auth"
 	"github.com/drone/drone-runtime/engine/docker/stdcopy"
+	"github.com/mholt/archiver"
 
 	"docker.io/go-docker"
 	"docker.io/go-docker/api/types"
+	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/network"
 	"docker.io/go-docker/api/types/volume"
 )
@@ -80,6 +85,12 @@ func (e *dockerEngine) Setup(ctx context.Context, spec *engine.Spec) error {
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	if spec.Docker.CopyHost {
+		if err := e.copyHostToContainer(ctx, spec); err != nil {
+			return err
 		}
 	}
 
@@ -281,5 +292,89 @@ func (e *dockerEngine) Destroy(ctx context.Context, spec *engine.Spec) error {
 	// this is because we silently ignore cleanup failures
 	// and instead ask the system admin to periodically run
 	// `docker prune` commands.
+	return nil
+}
+
+func (e *dockerEngine) copyHostToContainer(ctx context.Context, spec *engine.Spec) error {
+	// create a container
+	copyUID, err := e.createCopyHostContainer(ctx, spec)
+	if err != nil {
+		return err
+	}
+	// create and copy a tar file to the container
+	if err := e.createTarAndCopyToContainer(ctx, copyUID); err != nil {
+		return err
+	}
+	// destroy the container
+	return e.destroyCopyHostContainer(ctx, copyUID)
+}
+
+func (e *dockerEngine) createCopyHostContainer(ctx context.Context, spec *engine.Spec) (string, error) {
+	volume, ok := engine.LookupVolume(spec, "host")
+	if !ok {
+		return "", fmt.Errorf("host volume is not found")
+	}
+	step := spec.Steps[0]
+	var mount *engine.VolumeMount
+	for _, m := range step.Volumes {
+		if m.Name == "host" {
+			mount = m
+		}
+	}
+	if mount == nil {
+		return "", fmt.Errorf("host volume mount is not found")
+	}
+	uid := fmt.Sprintf("copy_%d", rand.Int())
+	_, err := e.client.ContainerCreate(ctx,
+		&container.Config{
+			Image:   "busybox",
+			Volumes: nil,
+		},
+		&container.HostConfig{
+			Binds: []string{fmt.Sprintf("%s:%s", volume.Metadata.UID, mount.Path)},
+		},
+		&network.NetworkingConfig{},
+		uid,
+	)
+	return uid, err
+}
+
+func (e *dockerEngine) createTarAndCopyToContainer(ctx context.Context, uid string) error {
+	copyOpts := types.CopyToContainerOptions{}
+	copyOpts.AllowOverwriteDirWithFile = false
+	// archive a current directory to a tar file
+	dir, err := ioutil.TempDir("", "drone")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	tarPath := filepath.Join(dir, "drone")
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if err := archiver.Archive([]string{wd}, tarPath); err != nil {
+		return err
+	}
+
+	// copy the tar file to the container
+	tar, err := os.Open(tarPath)
+	if err != nil {
+		return err
+	}
+	defer tar.Close()
+
+	return e.client.CopyToContainer(ctx, uid, "/", tar, copyOpts)
+}
+
+func (e *dockerEngine) destroyCopyHostContainer(ctx context.Context, uid string) error {
+	removeOpts := types.ContainerRemoveOptions{
+		Force:         true,
+		RemoveLinks:   false,
+		RemoveVolumes: true,
+	}
+
+	e.client.ContainerKill(ctx, uid, "9")
+	e.client.ContainerRemove(ctx, uid, removeOpts)
 	return nil
 }

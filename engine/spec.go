@@ -69,8 +69,9 @@ type (
 
 	// DockerConfig configures a Docker-based pipeline.
 	DockerConfig struct {
-		Auths   []*DockerAuth `json:"auths,omitempty"`
-		Volumes []*Volume     `json:"volumes,omitempty"`
+		Auths    []*DockerAuth `json:"auths,omitempty"`
+		Volumes  []*Volume     `json:"volumes,omitempty"`
+		CopyHost bool          `json:",omitempty"`
 	}
 
 	// DockerStep configures a docker step.
