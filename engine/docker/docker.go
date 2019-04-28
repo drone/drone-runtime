@@ -17,7 +17,6 @@ package docker
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -29,6 +28,7 @@ import (
 	"github.com/drone/drone-runtime/engine/docker/auth"
 	"github.com/drone/drone-runtime/engine/docker/stdcopy"
 	"github.com/mholt/archiver"
+	"github.com/pkg/errors"
 
 	"docker.io/go-docker"
 	"docker.io/go-docker/api/types"
@@ -90,7 +90,7 @@ func (e *dockerEngine) Setup(ctx context.Context, spec *engine.Spec) error {
 
 	if spec.Docker.CopyHost {
 		if err := e.copyHostToContainer(ctx, spec); err != nil {
-			return err
+			return errors.Wrap(err, "failed to copy host files to container")
 		}
 	}
 
@@ -110,7 +110,7 @@ func (e *dockerEngine) Setup(ctx context.Context, spec *engine.Spec) error {
 
 func (e *dockerEngine) Create(ctx context.Context, spec *engine.Spec, step *engine.Step) error {
 	if step.Docker == nil {
-		return errors.New("engine: missing docker configuration")
+		return fmt.Errorf("engine: missing docker configuration")
 	}
 
 	// parse the docker image name. We need to extract the
@@ -299,11 +299,11 @@ func (e *dockerEngine) copyHostToContainer(ctx context.Context, spec *engine.Spe
 	// create a container
 	copyUID, err := e.createCopyHostContainer(ctx, spec)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create a container to copy host files to volume")
 	}
 	// create and copy a tar file to the container
 	if err := e.createTarAndCopyToContainer(ctx, copyUID); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create and copy a tar file to volume")
 	}
 	// destroy the container
 	return e.destroyCopyHostContainer(ctx, copyUID)
@@ -345,22 +345,22 @@ func (e *dockerEngine) createTarAndCopyToContainer(ctx context.Context, uid stri
 	// archive a current directory to a tar file
 	dir, err := ioutil.TempDir("", "drone")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create a temporary directory")
 	}
 	defer os.RemoveAll(dir)
 	tarPath := filepath.Join(dir, "drone")
 	wd, err := os.Getwd()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get the current directory path")
 	}
 	if err := archiver.Archive([]string{wd}, tarPath); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create a tar file")
 	}
 
 	// copy the tar file to the container
 	tar, err := os.Open(tarPath)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to open a tar file '%s'", tarPath)
 	}
 	defer tar.Close()
 
