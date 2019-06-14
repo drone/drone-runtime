@@ -91,6 +91,7 @@ func TestToHostConfig(t *testing.T) {
 			ExtraHosts: []string{"host.company.com"},
 			DNS:        []string{"8.8.8.8"},
 			DNSSearch:  []string{"dns.company.com"},
+			IPC:        "host",
 		},
 		Resources: &engine.Resources{
 			Limits: &engine.ResourceObject{
@@ -129,6 +130,7 @@ func TestToHostConfig(t *testing.T) {
 		DNS:        []string{"8.8.8.8"},
 		DNSSearch:  []string{"dns.company.com"},
 		ExtraHosts: []string{"host.company.com"},
+		IpcMode:    "host",
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,

@@ -89,6 +89,9 @@ func toHostConfig(spec *engine.Spec, step *engine.Step) *container.HostConfig {
 	if len(step.Docker.ExtraHosts) > 0 {
 		config.ExtraHosts = step.Docker.ExtraHosts
 	}
+	if len(step.Docker.IPC) > 0 {
+		config.IpcMode = container.IpcMode(step.Docker.IPC)
+	}
 	if step.Resources != nil {
 		config.Resources = container.Resources{}
 		if limits := step.Resources.Limits; limits != nil {
