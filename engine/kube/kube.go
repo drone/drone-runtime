@@ -134,19 +134,7 @@ func (e *kubeEngine) Start(ctx context.Context, spec *engine.Spec, step *engine.
 	}
 
 	if e.node != "" {
-		pod.Spec.Affinity = &v1.Affinity{
-			NodeAffinity: &v1.NodeAffinity{
-				RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
-					NodeSelectorTerms: []v1.NodeSelectorTerm{{
-						MatchExpressions: []v1.NodeSelectorRequirement{{
-							Key:      "kubernetes.io/hostname",
-							Operator: v1.NodeSelectorOpIn,
-							Values:   []string{e.node},
-						}},
-					}},
-				},
-			},
-		}
+		pod.Spec.NodeName = e.node
 	}
 
 	_, err := e.client.CoreV1().Pods(spec.Metadata.Namespace).Create(pod)
