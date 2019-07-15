@@ -44,7 +44,12 @@ func newWriter(state *State) *lineWriter {
 	w.now = time.Now().UTC()
 	w.state = state
 	w.rep = newReplacer(state.config.Secrets)
-	w.limit = 5242880 // 5MB max log size
+	w.limit = state.config.LoggingConfig.LogSizeLimitMB
+
+	if w.limit == 0 {
+		w.limit = 5242880 // 5MB default max log size
+	}
+
 	return w
 }
 
