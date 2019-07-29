@@ -54,6 +54,14 @@ func toConfig(spec *engine.Spec, step *engine.Step) *container.Config {
 			config.Env = append(config.Env, sec.Env+"="+secret.Data)
 		}
 	}
+
+	// includes the user-defined network ID. This can be
+	// useful when you need to launch containers outside
+	// the pipeline that are attached to the same network
+	// as the pipeline itself.
+	config.Env = append(config.Env, "DOCKER_NETWORK_ID="+spec.Metadata.UID)
+	config.Env = append(config.Env, "DRONE_DOCKER_NETWORK_ID="+spec.Metadata.UID)
+
 	if len(step.Docker.Args) != 0 {
 		config.Cmd = step.Docker.Args
 	}

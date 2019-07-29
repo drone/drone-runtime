@@ -179,7 +179,10 @@ func (e *dockerEngine) Create(ctx context.Context, spec *engine.Spec, step *engi
 		}
 	}
 
-	if step.Docker.Network != "" {
+	// use the default user-defined network if network_mode
+	// is not otherwise specified.
+	// QUESTION: is this even used?
+	if step.Docker.Network == "" {
 		for _, net := range step.Docker.Networks {
 			err = e.client.NetworkConnect(ctx, net, step.Metadata.UID, &network.EndpointSettings{
 				Aliases: []string{net},
