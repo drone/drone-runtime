@@ -172,7 +172,10 @@ func toVolumeSet(spec *engine.Spec, step *engine.Step) map[string]struct{} {
 		if isDevice(volume) {
 			continue
 		}
-		if isDataVolume(volume) {
+		if isNamedPipe(volume) {
+			continue
+		}
+		if isBindMount(volume) == false {
 			continue
 		}
 		set[mount.Path] = struct{}{}
@@ -194,11 +197,25 @@ func toVolumeSlice(spec *engine.Spec, step *engine.Step) []string {
 		if isDevice(volume) {
 			continue
 		}
+
+		// experimental
+		if volumeSetFlag {
+			if isDataVolume(volume) {
+				path := volume.Metadata.UID + ":" + mount.Path
+				to = append(to, path)
+			} else if isBindMount(volume) {
+				path := volume.HostPath.Path + ":" + mount.Path
+				to = append(to, path)
+			}
+			continue
+		}
+
 		if isDataVolume(volume) == false {
 			continue
 		}
 		path := volume.Metadata.UID + ":" + mount.Path
 		to = append(to, path)
+
 	}
 	return to
 }
@@ -212,6 +229,13 @@ func toVolumeMounts(spec *engine.Spec, step *engine.Step) []mount.Mount {
 		if !ok {
 			continue
 		}
+
+		if volumeSetFlag {
+			if isBindMount(source) && !isDevice(source) {
+				continue
+			}
+		}
+
 		// HACK: this condition can be removed once
 		// toVolumeSlice has been fully replaced. at this
 		// time, I cannot figure out how to get mounts
