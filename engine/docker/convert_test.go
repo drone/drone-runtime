@@ -158,6 +158,7 @@ func TestToHostConfig(t *testing.T) {
 
 func TestToNetConfig(t *testing.T) {
 	step := &engine.Step{
+		Docker: &engine.DockerStep{},
 		Metadata: engine.Metadata{
 			Name: "redis",
 		},
