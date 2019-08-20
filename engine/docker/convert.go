@@ -15,7 +15,6 @@
 package docker
 
 import (
-	"os"
 	"strings"
 
 	"github.com/drone/drone-runtime/engine"
@@ -24,10 +23,6 @@ import (
 	"docker.io/go-docker/api/types/mount"
 	"docker.io/go-docker/api/types/network"
 )
-
-// feature flag to enables setting the config volume set
-// to emulate 0.8 behavior.
-var volumeSetFlag = os.Getenv("DRONE_FEATURE_VOLUME_SET") == "true"
 
 // returns a container configuration.
 func toConfig(spec *engine.Spec, step *engine.Step) *container.Config {
@@ -68,13 +63,8 @@ func toConfig(spec *engine.Spec, step *engine.Step) *container.Config {
 	if len(step.Docker.Command) != 0 {
 		config.Entrypoint = step.Docker.Command
 	}
-
-	// feature flag enables setting the config Volumes
-	// for improved 0.8 compatibility.
-	if volumeSetFlag {
-		if len(step.Volumes) != 0 {
-			config.Volumes = toVolumeSet(spec, step)
-		}
+	if len(step.Volumes) != 0 {
+		config.Volumes = toVolumeSet(spec, step)
 	}
 	return config
 }
@@ -205,25 +195,14 @@ func toVolumeSlice(spec *engine.Spec, step *engine.Step) []string {
 		if isDevice(volume) {
 			continue
 		}
-
-		// experimental
-		if volumeSetFlag {
-			if isDataVolume(volume) {
-				path := volume.Metadata.UID + ":" + mount.Path
-				to = append(to, path)
-			} else if isBindMount(volume) {
-				path := volume.HostPath.Path + ":" + mount.Path
-				to = append(to, path)
-			}
-			continue
+		if isDataVolume(volume) {
+			path := volume.Metadata.UID + ":" + mount.Path
+			to = append(to, path)
 		}
-
-		if isDataVolume(volume) == false {
-			continue
+		if isBindMount(volume) {
+			path := volume.HostPath.Path + ":" + mount.Path
+			to = append(to, path)
 		}
-		path := volume.Metadata.UID + ":" + mount.Path
-		to = append(to, path)
-
 	}
 	return to
 }
@@ -238,10 +217,8 @@ func toVolumeMounts(spec *engine.Spec, step *engine.Step) []mount.Mount {
 			continue
 		}
 
-		if volumeSetFlag {
-			if isBindMount(source) && !isDevice(source) {
-				continue
-			}
+		if isBindMount(source) && !isDevice(source) {
+			continue
 		}
 
 		// HACK: this condition can be removed once
