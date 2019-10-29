@@ -253,7 +253,7 @@ func toPod(spec *engine.Spec, step *engine.Step) *v1.Pod {
 		}}
 	}
 
-	_, domain, latest, _ := parseImage(step.Docker.Image)
+	_, _, latest, _ := parseImage(step.Docker.Image)
 
 	// if user not set pull policy and tag is :latest, change pull policy to always
 	if step.Docker.PullPolicy == engine.PullDefault && latest {
