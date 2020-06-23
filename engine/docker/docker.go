@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"docker.io/go-docker"
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker/auth"
 	"github.com/drone/drone-runtime/engine/docker/stdcopy"
@@ -143,7 +142,7 @@ func (e *dockerEngine) Create(ctx context.Context, spec *engine.Spec, step *engi
 
 	// automatically pull and try to re-create the image if the
 	// failure is caused because the image does not exist.
-	if docker.IsErrImageNotFound(err) && step.Docker.PullPolicy != engine.PullNever {
+	if client.IsErrNotFound(err) && step.Docker.PullPolicy != engine.PullNever {
 		rc, perr := e.client.ImagePull(ctx, step.Docker.Image, pullopts)
 		if perr != nil {
 			return perr
