@@ -10,9 +10,10 @@ import (
 
 	"github.com/drone/drone-runtime/engine"
 
-	"docker.io/go-docker/api/types/container"
-	"docker.io/go-docker/api/types/mount"
-	"docker.io/go-docker/api/types/network"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
+
 	"github.com/google/go-cmp/cmp"
 )
 

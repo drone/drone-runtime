@@ -22,23 +22,24 @@ import (
 	"io"
 	"io/ioutil"
 
+	"docker.io/go-docker"
 	"github.com/drone/drone-runtime/engine"
 	"github.com/drone/drone-runtime/engine/docker/auth"
 	"github.com/drone/drone-runtime/engine/docker/stdcopy"
 
-	"docker.io/go-docker"
-	"docker.io/go-docker/api/types"
-	"docker.io/go-docker/api/types/network"
-	"docker.io/go-docker/api/types/volume"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
 )
 
 type dockerEngine struct {
-	client docker.APIClient
+	client client.APIClient
 }
 
 // NewEnv returns a new Engine from the environment.
 func NewEnv() (engine.Engine, error) {
-	cli, err := docker.NewEnvClient()
+	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +58,7 @@ func Ping(ctx context.Context, engine engine.Engine) error {
 }
 
 // New returns a new Engine using the Docker API Client.
-func New(client docker.APIClient) engine.Engine {
+func New(client client.APIClient) engine.Engine {
 	return &dockerEngine{
 		client: client,
 	}
@@ -72,7 +73,7 @@ func (e *dockerEngine) Setup(ctx context.Context, spec *engine.Spec) error {
 				continue
 			}
 
-			_, err := e.client.VolumeCreate(ctx, volume.VolumesCreateBody{
+			_, err := e.client.VolumeCreate(ctx, volume.VolumeCreateBody{
 				Name:   vol.Metadata.UID,
 				Driver: "local",
 				Labels: spec.Metadata.Labels,
