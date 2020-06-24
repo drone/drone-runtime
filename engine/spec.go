@@ -35,6 +35,8 @@ type (
 		// VMWare Fusion settings. These settings are only
 		// used by the VMWare runtime driver.
 		Fusion *FusionConfig `json:"fusion,omitempty"`
+
+		LoggingConfig `json:"logging,omitempty"`
 	}
 
 	// Step defines a pipeline step.
@@ -204,5 +206,10 @@ type (
 	// host node's filesystem into your container.
 	VolumeHostPath struct {
 		Path string `json:"path,omitempty"`
+	}
+
+	// LoggingConfig configures how application logs are captured
+	LoggingConfig struct {
+		LogSizeLimitMB int `json:"logSizeLimitMB,omitempty"`
 	}
 )
