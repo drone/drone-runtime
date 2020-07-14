@@ -114,3 +114,31 @@ func TestLineReplacer(t *testing.T) {
 		t.Errorf("Expect nil replacer when no masked secrets")
 	}
 }
+
+func TestLineCircling(t *testing.T) {
+	hook := &Hook{}
+	state := &State{}
+
+	state.hook = hook
+	state.Step = &engine.Step{}
+	state.config = &engine.Spec{}
+	state.config.Secrets = []*engine.Secret{
+		{Metadata: engine.Metadata{Name: "foo"}, Data: "bar"},
+	}
+
+	w := newWriter(state)
+	w.limit = 25
+	w.Write([]byte("foobar1"))
+	w.Write([]byte("foobar2"))
+	w.Write([]byte("foobar3"))
+
+	if len(w.lines) != 2 {
+		t.Errorf("Got %d lines, want %d lines", len(w.lines), 2)
+	}
+	if got, want := w.lines[0].Message, "foo********2"; got != want {
+		t.Errorf("Got line %q, want %q", got, want)
+	}
+	if got, want := w.lines[1].Message, "foo********3"; got != want {
+		t.Errorf("Got line %q, want %q", got, want)
+	}
+}

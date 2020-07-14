@@ -49,12 +49,6 @@ func newWriter(state *State) *lineWriter {
 }
 
 func (w *lineWriter) Write(p []byte) (n int, err error) {
-	// if the maximum log size has been exceeded, the
-	// log entry is silently ignored.
-	if w.size >= w.limit {
-		return len(p), nil
-	}
-
 	out := string(p)
 	if w.rep != nil {
 		out = w.rep.Replace(out)
@@ -82,6 +76,11 @@ func (w *lineWriter) Write(p []byte) (n int, err error) {
 
 		if w.state.hook.GotLine != nil {
 			w.state.hook.GotLine(w.state, line)
+		}
+
+		for w.size+len(part) >= w.limit {
+			w.size -= len(w.lines[0].Message)
+			w.lines = w.lines[1:]
 		}
 		w.size = w.size + len(part)
 		w.num++
