@@ -7,12 +7,12 @@ package kube
 import (
 	"path"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/drone/drone-runtime/engine"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -22,6 +22,7 @@ import (
 
 // helper function converts environment variable
 // string data to kubernetes variables.
+
 func toEnv(spec *engine.Spec, step *engine.Step) []v1.EnvVar {
 	var to []v1.EnvVar
 	for k, v := range step.Envs {
@@ -236,6 +237,7 @@ func toResources(step *engine.Step) v1.ResourceRequirements {
 // helper function returns a kubernetes pod for the
 // given step and specification.
 func toPod(spec *engine.Spec, step *engine.Step) *v1.Pod {
+
 	var volumes []v1.Volume
 	volumes = append(volumes, toVolumes(spec, step)...)
 	volumes = append(volumes, toConfigVolumes(spec, step)...)
@@ -253,9 +255,10 @@ func toPod(spec *engine.Spec, step *engine.Step) *v1.Pod {
 
 	return &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      step.Metadata.UID,
-			Namespace: step.Metadata.Namespace,
-			Labels:    step.Metadata.Labels,
+			Name:        step.Metadata.UID,
+			Namespace:   step.Metadata.Namespace,
+			Labels:      step.Metadata.Labels,
+			Annotations: step.Annotations,
 		},
 		Spec: v1.PodSpec{
 			AutomountServiceAccountToken: boolptr(false),
