@@ -235,3 +235,149 @@ func TestPullPolicy_String(t *testing.T) {
 		}
 	}
 }
+
+//
+// volume host path type unit tests.
+//
+
+func TestVolumeHostPathType_Marshal(t *testing.T) {
+	tests := []struct {
+		hostPathType VolumeHostPathType
+		data         string
+	}{
+		{
+			hostPathType: HostPathDirectoryOrCreate,
+			data:         `"dir-or-create"`,
+		},
+		{
+			hostPathType: HostPathDirectory,
+			data:         `"path-dir"`,
+		},
+		{
+			hostPathType: HostPathFileOrCreate,
+			data:         `"file-or-create"`,
+		},
+		{
+			hostPathType: HostPathFile,
+			data:         `"file"`,
+		},
+		{
+			hostPathType: HostPathSocket,
+			data:         `"socket"`,
+		},
+		{
+			hostPathType: HostPathCharDev,
+			data:         `"char-dev"`,
+		},
+		{
+			hostPathType: HostPathBlockDev,
+			data:         `"block-dev"`,
+		},
+	}
+	for _, test := range tests {
+		data, err := json.Marshal(&test.hostPathType)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if bytes.Equal([]byte(test.data), data) == false {
+			t.Errorf("Failed to marshal host path type %s", test.hostPathType)
+		}
+	}
+}
+
+func TestRunVolumeHostPathType_Unmarshal(t *testing.T) {
+	tests := []struct {
+		hostPathType VolumeHostPathType
+		data         string
+	}{
+		{
+			hostPathType: HostPathDirectoryOrCreate,
+			data:         `"dir-or-create"`,
+		},
+		{
+			hostPathType: HostPathDirectory,
+			data:         `"path-dir"`,
+		},
+		{
+			hostPathType: HostPathFileOrCreate,
+			data:         `"file-or-create"`,
+		},
+		{
+			hostPathType: HostPathFile,
+			data:         `"file"`,
+		},
+		{
+			hostPathType: HostPathSocket,
+			data:         `"socket"`,
+		},
+		{
+			hostPathType: HostPathCharDev,
+			data:         `"char-dev"`,
+		},
+		{
+			hostPathType: HostPathBlockDev,
+			data:         `"block-dev"`,
+		},
+	}
+	for _, test := range tests {
+		var hostPathType VolumeHostPathType
+		err := json.Unmarshal([]byte(test.data), &hostPathType)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if got, want := hostPathType, test.hostPathType; got != want {
+			t.Errorf("Want host path type %q, got %q", want, got)
+		}
+	}
+}
+
+func TestVolumeHostPathType_UnmarshalTypeError(t *testing.T) {
+	var hostPathType VolumeHostPathType
+	err := json.Unmarshal([]byte("[]"), &hostPathType)
+	if _, ok := err.(*json.UnmarshalTypeError); !ok {
+		t.Errorf("Expect unmarshal error return when JSON invalid")
+	}
+}
+
+func TestVolumeHostPathType_String(t *testing.T) {
+	tests := []struct {
+		hostPathType VolumeHostPathType
+		value        string
+	}{
+		{
+			hostPathType: HostPathDirectoryOrCreate,
+			value:        "dir-or-create",
+		},
+		{
+			hostPathType: HostPathDirectory,
+			value:        "path-dir",
+		},
+		{
+			hostPathType: HostPathFileOrCreate,
+			value:        "file-or-create",
+		},
+		{
+			hostPathType: HostPathFile,
+			value:        "file",
+		},
+		{
+			hostPathType: HostPathSocket,
+			value:        "socket",
+		},
+		{
+			hostPathType: HostPathCharDev,
+			value:        "char-dev",
+		},
+		{
+			hostPathType: HostPathBlockDev,
+			value:        "block-dev",
+		},
+	}
+	for _, test := range tests {
+		if got, want := test.hostPathType.String(), test.value; got != want {
+			t.Errorf("Want host path type string %q, got %q", want, got)
+		}
+	}
+}

@@ -116,3 +116,65 @@ func (r *RunPolicy) UnmarshalJSON(b []byte) error {
 	*r = runPolicyName[s]
 	return nil
 }
+
+// VolumeHostPathType defines the type of a host mount
+// inside a pod; https://kubernetes.io/docs/concepts/storage/volumes/#hostpath
+type VolumeHostPathType int
+
+// VolumeHostPathType enumeration.
+const (
+	HostPathDirectoryOrCreate VolumeHostPathType = iota
+	HostPathDirectory
+	HostPathFileOrCreate
+	HostPathFile
+	HostPathSocket
+	HostPathCharDev
+	HostPathBlockDev
+)
+
+func (h VolumeHostPathType) String() string {
+	return hostPathTypeID[h]
+}
+
+var hostPathTypeID = map[VolumeHostPathType]string{
+	HostPathDirectoryOrCreate: "dir-or-create",
+	HostPathDirectory:         "path-dir",
+	HostPathFileOrCreate:      "file-or-create",
+	HostPathFile:              "file",
+	HostPathSocket:            "socket",
+	HostPathCharDev:           "char-dev",
+	HostPathBlockDev:          "block-dev",
+}
+
+var hostPathTypeName = map[string]VolumeHostPathType{
+	"dir-or-create":  HostPathDirectoryOrCreate,
+	"path-dir":       HostPathDirectory,
+	"file-or-create": HostPathFileOrCreate,
+	"file":           HostPathFile,
+	"socket":         HostPathSocket,
+	"char-dev":       HostPathCharDev,
+	"block-dev":      HostPathBlockDev,
+}
+
+// MarshalJSON marshals the string representation of the
+// host path type to JSON.
+func (h *VolumeHostPathType) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(hostPathTypeID[*h])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmarshals the json representation of the
+// host path type from a string value.
+func (h *VolumeHostPathType) UnmarshalJSON(b []byte) error {
+	// unmarshal as string
+	var s string
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	// lookup value
+	*h = hostPathTypeName[s]
+	return nil
+}

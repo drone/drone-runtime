@@ -203,6 +203,7 @@ type (
 	// VolumeHostPath mounts a file or directory from the
 	// host node's filesystem into your container.
 	VolumeHostPath struct {
-		Path string `json:"path,omitempty"`
+		Path string             `json:"path,omitempty"`
+		Type VolumeHostPathType `json:"type"`
 	}
 )
