@@ -31,6 +31,7 @@ func main() {
 	u := flag.String("kube-url", "", "")
 	n := flag.String("kube-node", "", "")
 	d := flag.Bool("kube-debug", false, "")
+	ns := flag.String("kube-namespace", "drone", "")
 	t := flag.Duration("timeout", time.Hour, "")
 	h := flag.Bool("help", false, "")
 
@@ -73,7 +74,7 @@ func main() {
 			log.Fatalln(err)
 		}
 	} else {
-		engine, err = kube.NewFile(*u, *k, *n)
+		engine, err = kube.NewFile(*u, *k, *n, *ns)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -108,6 +109,7 @@ func usage() {
       --kube-config loads a kubernetes config file
       --kube-url    sets a kubernetes endpoint
       --kube-debug  writes a kubernetes configuration to stdout
+      --kube-namespace sets the kubernetes namespace to run in
       --timeout     sets an execution timeout
   -h, --help        display this help and exit`)
 }
